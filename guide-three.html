@@ -1,0 +1,2080 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PDF Review Tool</title>
+<!-- pdf.js v3 (UMD) — werkt als klassiek script, ook bij lokaal openen -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#16191f; --ink-soft:#3a4150; --line:#e3e2dc; --line-strong:#c8c6bd;
+    --paper:#f4f2ec; --card:#fbfaf6; --accent:#c2410c; --accent-soft:#fde6d8;
+    --ok:#15683f; --ok-soft:#dcf2e6; --err:#a3231b; --err-soft:#fbe2df;
+    --mono:'IBM Plex Mono',ui-monospace,monospace;
+    --sans:'IBM Plex Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    --display:'Fraunces',Georgia,serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:var(--sans);background:var(--paper);color:var(--ink);line-height:1.5}
+
+  header{background:var(--ink);color:#f4f2ec;padding:.9rem 1.4rem;position:sticky;top:0;z-index:40;
+    display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap}
+  .brand{display:flex;align-items:baseline;gap:.6rem}
+  .brand h1{font-family:var(--display);font-weight:600;font-size:1.4rem;letter-spacing:-.01em}
+  .brand span{font-family:var(--mono);font-size:.7rem;opacity:.55;text-transform:uppercase;letter-spacing:.12em}
+  .stats{display:flex;gap:1.5rem;font-family:var(--mono);font-size:.78rem}
+  .stat b{display:block;font-size:1.25rem;font-weight:500}
+  .stat.err b{color:#ff9d8a}
+  .stat span{opacity:.55;text-transform:uppercase;letter-spacing:.08em;font-size:.62rem}
+
+  main{max-width:1180px;margin:0 auto;padding:1.8rem 1.4rem 4rem}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:1.4rem;margin-bottom:1.4rem}
+
+  .drop{border:2px dashed var(--line-strong);border-radius:10px;padding:2.6rem 1.5rem;text-align:center;
+    cursor:pointer;transition:.18s;background:var(--card)}
+  .drop:hover{border-color:var(--accent);background:#fff}
+  .drop.active{border-color:var(--accent);background:var(--accent-soft)}
+  .drop .ico{font-size:1.8rem}
+  .drop h3{font-family:var(--display);font-weight:600;font-size:1.15rem;margin:.5rem 0 .25rem}
+  .drop p{color:var(--ink-soft);font-size:.9rem;margin-bottom:1rem}
+  input[type=file]{display:none}
+
+  .btn{font-family:var(--sans);font-weight:600;font-size:.84rem;padding:.5rem 1.1rem;border:1px solid transparent;
+    border-radius:7px;cursor:pointer;transition:.15s}
+  .btn-primary{background:var(--accent);color:#fff}
+  .btn-primary:hover{background:#9a330a}
+  .btn-primary:disabled{opacity:.45;cursor:not-allowed}
+  .btn-ghost{background:transparent;color:var(--ink);border-color:var(--line-strong)}
+  .btn-ghost:hover{background:#fff;border-color:var(--ink)}
+  .btn-danger{background:transparent;color:var(--err);border-color:#e7b3ad}
+  .btn-danger:hover{background:var(--err);color:#fff;border-color:var(--err)}
+  .btn-sm{padding:.32rem .7rem;font-size:.76rem}
+  .btn.active{background:var(--ink);color:#fff;border-color:var(--ink)}
+
+  .toolbar{display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap;margin-bottom:.4rem}
+  .toolbar h2{font-family:var(--display);font-weight:600;font-size:1.25rem}
+  .toolbar .right{display:flex;gap:.7rem;align-items:center}
+  .chk{display:inline-flex;align-items:center;gap:.4rem;font-size:.85rem;color:var(--ink-soft);cursor:pointer}
+  .search-input{padding:.42rem .65rem;border:1px solid var(--line-strong);border-radius:7px;
+    font-family:var(--sans);font-size:.83rem;background:#fff;color:var(--ink)}
+  input.search-input{min-width:220px}
+  .dropdown{position:relative}
+  .dropdown-toggle{width:100%;display:flex;justify-content:space-between;align-items:center;gap:.5rem;
+    padding:.5rem .7rem;border:1px solid var(--line-strong);border-radius:7px;background:#fff;
+    font-family:var(--sans);font-size:.85rem;cursor:pointer;text-align:left;color:var(--ink)}
+  .dropdown-toggle .ph{color:var(--ink-soft)}
+  .dropdown-toggle .caret{color:var(--ink-soft);flex-shrink:0;transition:transform .15s}
+  .dropdown-toggle.open .caret{transform:rotate(180deg)}
+  .dropdown-panel{position:absolute;top:calc(100% + 4px);left:0;right:0;background:#fff;
+    border:1px solid var(--line-strong);border-radius:8px;box-shadow:0 10px 28px rgba(0,0,0,.16);
+    padding:.6rem;z-index:50}
+  .dropdown-panel .notes{max-height:180px}
+
+  table{width:100%;border-collapse:collapse;margin-top:.8rem}
+  th{font-family:var(--mono);font-size:.66rem;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);
+    text-align:left;padding:.6rem .8rem;border-bottom:2px solid var(--line)}
+  td{padding:.7rem .8rem;border-bottom:1px solid var(--line);font-size:.9rem;vertical-align:middle}
+  tr:hover td{background:#fff}
+  .fname{font-weight:500;word-break:break-all}
+  .pill{display:inline-flex;align-items:center;gap:.35rem;padding:.25rem .6rem;border-radius:999px;
+    font-size:.72rem;font-weight:600;font-family:var(--mono)}
+  .pill.ok{background:var(--ok-soft);color:var(--ok)}
+  .pill.err{background:var(--err-soft);color:var(--err)}
+  .meta{font-family:var(--mono);font-size:.74rem;color:var(--ink-soft)}
+  .empty{text-align:center;color:var(--ink-soft);padding:1.5rem;font-size:.9rem}
+
+  /* Viewer */
+  .modal{display:none;position:fixed;inset:0;background:rgba(22,25,31,.6);z-index:100;padding:0}
+  .modal.open{display:flex;align-items:center;justify-content:center}
+  .viewer{background:var(--card);border-radius:0;width:100vw;max-width:none;height:100vh;display:flex;flex-direction:column;overflow:hidden}
+  .v-head{display:flex;justify-content:space-between;align-items:center;gap:1rem;padding:.8rem 1.1rem;border-bottom:1px solid var(--line);flex-wrap:wrap}
+  .v-head .title{font-weight:600;word-break:break-all;flex:1;min-width:180px}
+  .save-indicator{font-family:var(--mono);font-size:.66rem;text-transform:uppercase;letter-spacing:.06em;
+    color:var(--ok);opacity:0;transition:opacity .25s;white-space:nowrap;flex-shrink:0}
+  .save-indicator.show{opacity:1}
+  .save-indicator.warn{color:var(--err)}
+  .v-tools{display:flex;gap:.5rem;align-items:center;flex-wrap:wrap}
+  .v-anno{display:flex;gap:.45rem;align-items:center;flex-wrap:wrap;padding:.55rem 1.1rem;border-bottom:1px solid var(--line);background:#f7f5ef}
+  .anno-label{font-family:var(--mono);font-size:.64rem;text-transform:uppercase;letter-spacing:.1em;color:var(--ink-soft);margin-right:.2rem}
+  .anno-sep{width:1px;height:22px;background:var(--line-strong);margin:0 .3rem}
+  .btn-icon{width:32px;height:32px;display:inline-flex;align-items:center;justify-content:center;
+    border:1px solid var(--line-strong);border-radius:8px;background:#fff;cursor:pointer;
+    font-size:1rem;color:var(--ink);padding:0;line-height:1}
+  .btn-icon:hover{background:#f1efe8}
+  .btn-icon.active{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .swatch{width:21px;height:21px;border-radius:50%;border:2px solid transparent;cursor:pointer;padding:0;
+    background:var(--sw);box-shadow:0 0 0 1px var(--line-strong)}
+  .swatch.active{border-color:var(--ink);box-shadow:0 0 0 1px #fff inset,0 0 0 1px var(--ink)}
+  .thumbs{display:flex;flex-direction:column;gap:.4rem}
+  .thumb{display:flex;flex-direction:column;align-items:center;gap:.25rem;border:1px solid var(--line-strong);
+    background:#fff;border-radius:6px;padding:.35rem;width:100%}
+  .thumb:hover{border-color:var(--ink)}
+  .thumb.active{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+  .thumb-imgwrap{position:relative;width:100%;min-height:90px;cursor:crosshair;user-select:none}
+  .thumb-imgwrap canvas{display:block;max-width:100%;box-shadow:0 1px 4px rgba(0,0,0,.15)}
+  .thumb-sel{position:absolute;display:none;border:2px solid var(--accent);
+    background:rgba(194,65,12,.22);pointer-events:none;box-sizing:border-box}
+  .thumb-num{font-family:var(--mono);font-size:.68rem;color:var(--ink-soft)}
+  .v-body{flex:1;display:flex;min-height:0}
+  .canvas-wrap{flex:1;overflow:auto;background:#d8d6cd;padding:1.2rem;
+    display:flex;justify-content:safe center;align-items:safe center}
+  .stage{position:relative;flex-shrink:0;box-shadow:0 6px 24px rgba(0,0,0,.18)}
+  .stage canvas{display:block}
+  #overlay{position:absolute;inset:0;cursor:crosshair}
+  .side{width:300px;border-left:1px solid var(--line);display:flex;flex-direction:column;background:var(--card);overflow-y:auto;min-height:0}
+  .side-sec{padding:1rem;border-bottom:1px solid var(--line)}
+  .side-sec h4{font-family:var(--mono);font-size:.68rem;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-soft);margin-bottom:.6rem}
+  .err-toggle{display:flex;align-items:center;gap:.6rem;padding:.6rem .7rem;border:1px solid var(--line-strong);border-radius:8px;cursor:pointer}
+  .err-toggle.on{background:var(--err-soft);border-color:var(--err)}
+  .err-toggle input{width:18px;height:18px;accent-color:var(--err)}
+  .err-toggle span{font-weight:600;font-size:.9rem}
+  .note-row{display:flex;gap:.4rem;margin-bottom:.5rem}
+  .note-row input{flex:1;padding:.45rem .6rem;border:1px solid var(--line-strong);border-radius:7px;font-family:var(--sans);font-size:.85rem}
+  .notes{list-style:none;display:flex;flex-direction:column;gap:.4rem;max-height:30vh;overflow:auto}
+  .notes li{display:flex;justify-content:space-between;gap:.5rem;background:#fff;border:1px solid var(--line);border-radius:7px;padding:.45rem .6rem;font-size:.85rem}
+  .notes button{border:none;background:none;color:var(--err);cursor:pointer;font-size:1rem;line-height:1}
+  .nav{display:flex;align-items:center;gap:.7rem;font-family:var(--mono);font-size:.82rem}
+  .v-foot{display:flex;justify-content:space-between;align-items:center;gap:1rem;padding:.6rem 1.1rem;border-top:1px solid var(--line);flex-wrap:wrap}
+  .file-nav{display:flex;align-items:center;gap:.7rem}
+  .file-nav .pos{font-family:var(--mono);font-size:.8rem;color:var(--ink-soft)}
+  .kbd-hint{font-family:var(--mono);font-size:.66rem;color:var(--ink-soft);opacity:.85}
+  .iconbtn{width:34px;height:34px;border:1px solid var(--line-strong);background:#fff;border-radius:7px;cursor:pointer;font-size:1rem}
+  .iconbtn:disabled{opacity:.4;cursor:not-allowed}
+  .x{background:none;border:none;font-size:1.6rem;cursor:pointer;color:var(--ink-soft);line-height:1}
+
+  .banner{padding:.7rem 1rem;border-radius:8px;font-size:.85rem;margin-top:.9rem}
+  .banner.warn{background:var(--err-soft);color:var(--err);border:1px solid #f0c2bd}
+  .banner.info{background:#e7eef6;color:#274b6d;border:1px solid #c6d8ea}
+  .loading{position:fixed;inset:0;background:rgba(244,242,236,.85);z-index:200;display:none;align-items:center;justify-content:center;font-family:var(--mono);font-size:.9rem}
+  .loading.show{display:flex}
+  @media(max-width:780px){.side{display:none}}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand"><h1>PDF Review</h1><span>review tool</span></div>
+  <div class="stats">
+    <div class="stat"><b id="sTotal">0</b><span>loaded</span></div>
+    <div class="stat err"><b id="sErr">0</b><span>with errors</span></div>
+  </div>
+</header>
+
+<main>
+  <div class="card">
+    <div class="drop" id="drop">
+      <div class="ico">⬇</div>
+      <h3>Drag your PDFs here</h3>
+      <p>Or select them manually — up to 150 files at once.</p>
+      <button class="btn btn-primary" id="selectBtn">Select PDFs</button>
+      <input type="file" id="fileInput" accept="application/pdf,.pdf" multiple>
+    </div>
+    <div class="banner info" id="libError" style="display:none">
+      ⚠ The PDF library could not be loaded. Check your internet connection and reopen the file.
+    </div>
+    <div class="banner warn" id="storageBanner" style="display:none"></div>
+  </div>
+
+  <div class="card" id="listCard" style="display:none">
+    <div class="toolbar">
+      <h2>Files to review</h2>
+      <div class="right">
+        <button class="btn btn-ghost btn-sm" id="addMore">+ Add more</button>
+        <select class="search-input" id="exportScope" title="Wat wil je bundelen?">
+          <option value="errors">Export: enkel bestanden met fouten</option>
+          <option value="reviewed">Export: fouten + notities/markeringen</option>
+          <option value="all">Export: alle bestanden</option>
+        </select>
+        <button class="btn btn-ghost btn-sm" id="exportSummaryBtn">Samenvatting exporteren</button>
+        <button class="btn btn-ghost btn-sm" id="exportAnnBtn">Annotatie-overzicht exporteren</button>
+        <button class="btn btn-primary btn-sm" id="exportBtn">Bundel exporteren (met originelen)</button>
+        <button class="btn btn-danger btn-sm" id="resetBtn">Clear all</button>
+      </div>
+    </div>
+    <div class="toolbar" style="margin-top:-.5rem">
+      <div style="display:flex;gap:.6rem;align-items:center;flex-wrap:wrap">
+        <input type="text" class="search-input" id="searchFile" placeholder="Zoek op bestandsnaam…">
+        <select class="search-input" id="sortBy">
+          <option value="name-asc">Naam (A–Z)</option>
+          <option value="name-desc">Naam (Z–A)</option>
+          <option value="errors-first">Fouten eerst</option>
+          <option value="notes-desc">Meeste notities eerst</option>
+          <option value="marks-desc">Meeste markeringen eerst</option>
+        </select>
+      </div>
+      <div class="right">
+        <label class="chk"><input type="checkbox" id="filterErr"> Show errors only</label>
+      </div>
+    </div>
+    <table>
+      <thead><tr><th>File</th><th>Status</th><th>Notes</th><th>Markings</th><th>Checklist</th><th></th></tr></thead>
+      <tbody id="tbody"></tbody>
+    </table>
+    <div class="empty" id="emptyFilter" style="display:none">No files with errors.</div>
+  </div>
+</main>
+
+<!-- Viewer -->
+<div class="modal" id="modal">
+  <div class="viewer">
+    <div class="v-head">
+      <div class="title" id="vTitle"></div>
+      <span class="save-indicator" id="saveIndicator">Opgeslagen ✓</span>
+      <div class="v-tools">
+        <button class="iconbtn" id="zOut" title="Uitzoomen">−</button>
+        <button class="btn btn-ghost btn-sm" id="zFit" title="Passend maken">Passend</button>
+        <button class="iconbtn" id="zIn" title="Inzoomen">+</button>
+        <button class="x" id="vClose">×</button>
+      </div>
+    </div>
+    <div class="v-anno">
+      <span class="anno-label">Annotatie</span>
+      <button class="btn-icon" id="tNumber" title="Annotatie: foutentype + opmerking koppelen">①</button>
+      <span class="anno-sep"></span>
+      <span class="anno-label">Draw</span>
+      <button class="btn-icon" id="tHighlight" title="Highlight">▭</button>
+      <button class="btn-icon" id="tCircle" title="Circle">◯</button>
+      <button class="btn-icon" id="tArrow" title="Arrow">↗</button>
+      <button class="btn-icon" id="tLine" title="Line">／</button>
+      <button class="btn-icon" id="tFree" title="Freehand">✎</button>
+      <span class="anno-sep"></span>
+      <span class="anno-label">Kleur</span>
+      <button class="swatch active" data-color="red" style="--sw:#dc2626" title="Rood"></button>
+      <button class="swatch" data-color="yellow" style="--sw:#ca8a04" title="Geel"></button>
+      <button class="swatch" data-color="green" style="--sw:#15803d" title="Groen"></button>
+      <span class="anno-sep"></span>
+      <span class="anno-label">Acties</span>
+      <button class="btn-icon" id="tDelete" title="Markering verwijderen">🗑</button>
+      <button class="btn-icon" id="tUndo" title="Ongedaan maken">↶</button>
+      <button class="btn btn-ghost btn-sm" id="tClear">Clear page</button>
+    </div>
+    <div class="v-body">
+      <div class="canvas-wrap">
+        <div class="stage" id="stage">
+          <canvas id="pdfCanvas"></canvas>
+          <canvas id="overlay"></canvas>
+        </div>
+      </div>
+      <div class="side">
+        <div class="side-sec">
+          <h4>Status</h4>
+          <label class="err-toggle" id="errToggle">
+            <input type="checkbox" id="errCheck">
+            <span>This PDF contains an error</span>
+          </label>
+        </div>
+        <div class="side-sec" id="selectedSec" style="display:none;flex:0 0 auto;max-height:38vh;flex-direction:column;min-height:0">
+          <h4 style="display:flex;justify-content:space-between;align-items:center">
+            <span id="selectedType">Markering</span>
+            <button class="x" id="selectedClose" title="Sluiten" style="font-size:1.1rem">×</button>
+          </h4>
+          <div style="overflow:auto;flex:1;min-height:0">
+            <div id="selectedExtras">
+              <div class="anno-label" style="margin:.2rem 0 .3rem">Soort fout</div>
+              <div class="dropdown" id="checklistDropdown">
+                <button type="button" class="dropdown-toggle" id="checklistDropdownBtn">
+                  <span id="checklistDropdownLabel" class="ph">Kies foutentype(s)…</span>
+                  <span class="caret">▾</span>
+                </button>
+                <div class="dropdown-panel" id="checklistDropdownPanel" style="display:none">
+                  <ul class="notes" id="selectedChecklist" style="overflow:auto"></ul>
+                  <div class="note-row" style="margin-top:.5rem">
+                    <input type="text" id="selectedChecklistNew" placeholder="Nieuw type toevoegen…">
+                    <button class="btn btn-primary btn-sm" id="selectedChecklistAdd">+</button>
+                  </div>
+                </div>
+              </div>
+              <div class="anno-label" style="margin:.5rem 0 .3rem">Opmerking</div>
+              <textarea id="selectedNote" placeholder="Opmerking bij deze markering…" rows="3"
+                style="width:100%;resize:vertical;padding:.5rem .6rem;border:1px solid var(--line-strong);
+                border-radius:7px;font-family:var(--sans);font-size:.85rem"></textarea>
+            </div>
+            <div class="anno-label" id="selectedExtrasHint" style="display:none;color:var(--ink-soft);font-style:italic">
+              Zuivere tekening — enkel de Annotatie-markering (①) draagt een foutentype en opmerking.
+            </div>
+          </div>
+          <button class="btn btn-danger btn-sm" id="selectedDelete" style="margin-top:.5rem">Markering verwijderen</button>
+        </div>
+        <div class="side-sec" style="flex:0 0 auto;display:flex;flex-direction:column;min-height:0">
+          <h4>Notes</h4>
+          <div class="note-row">
+            <input type="text" id="noteInput" placeholder="Add a note…">
+            <button class="btn btn-primary btn-sm" id="noteAdd">+</button>
+          </div>
+          <ul class="notes" id="notes" style="max-height:22vh"></ul>
+        </div>
+        <div class="side-sec" style="flex:0 0 auto;max-height:26vh;display:flex;flex-direction:column;min-height:0">
+          <h4>Markeringen op deze pagina</h4>
+          <ul class="notes" id="markList" style="overflow:auto"></ul>
+        </div>
+        <div class="side-sec" style="flex:0 0 auto;max-height:26vh;display:flex;flex-direction:column;min-height:0">
+          <h4>Pagina's</h4>
+          <div class="thumbs" id="thumbs" style="overflow:auto"></div>
+        </div>
+        <div class="side-sec">
+          <div class="nav">
+            <button class="iconbtn" id="prev">‹</button>
+            <span>Page <b id="pNum">1</b> / <span id="pTot">1</span></span>
+            <button class="iconbtn" id="next">›</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="v-foot">
+      <div class="file-nav">
+        <button class="btn btn-ghost btn-sm" id="prevFile">‹ Previous PDF</button>
+        <span class="pos">PDF <b id="filePos">1 / 1</b></span>
+        <button class="btn btn-primary btn-sm" id="nextFile">Next PDF ›</button>
+      </div>
+      <div class="kbd-hint">← → page &middot; N / P = next / previous PDF &middot; F = flag error &middot; H/C/A/L/V/G/D = tools &middot; U / Ctrl+Z = undo &middot; sleep = pannen &middot; sleep label/bolletje = verplaatsen &middot; Esc = tool uit / sluiten</div>
+    </div>
+  </div>
+</div>
+
+<div class="loading" id="loading">Building bundled PDF… one moment</div>
+
+<script>
+(function(){
+  // --- pdf.js check ---
+  if (typeof pdfjsLib === 'undefined') {
+    document.getElementById('libError').style.display = 'block';
+    return;
+  }
+  pdfjsLib.GlobalWorkerOptions.workerSrc =
+    'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+  const META_KEY = 'pdfReviewMeta_v1';
+  const CHECKLIST_KEY = 'pdfReviewChecklist_v1';
+  const DEFAULT_CHECKLIST = [
+    { id:'c1', label:'Overlaps in ducts' },
+    { id:'c2', label:'Labeling is not correct' },
+    { id:'c3', label:'Duct drawn on wrong side of the street' },
+    { id:'c4', label:'EVP on wrong location' },
+    { id:'c5', label:'Label EVP not correct' }
+  ];
+
+  // Kleurenpalet voor annotaties: canvas-weergave (hex/rgba) en pdf-lib export (rgb 0-1)
+  const PALETTE = {
+    red:    { stroke:'#dc2626', fill:'rgba(220,38,38,.22)' },
+    yellow: { stroke:'#ca8a04', fill:'rgba(250,204,21,.35)' },
+    green:  { stroke:'#15803d', fill:'rgba(34,197,94,.24)' }
+  };
+  const PDF_PALETTE = {
+    red:    [0.86,0.15,0.15],
+    yellow: [0.79,0.54,0.02],
+    green:  [0.08,0.50,0.24]
+  };
+
+  class Tool {
+    constructor(){
+      this.pdfs = [];               // { id, filename, bytes(Uint8Array), hasErrors, notes[], annotations{} }
+      this.storageMode = this.probeStorage(); // 'ok' | 'blocked' — vóór loadMeta(), die zelf ook faalveilig is
+      this.meta = this.loadMeta();  // persisted review state by filename (no bytes)
+      this.checklist = this.loadChecklist(); // foutentypes ('Overlaps in ducts', ...), gedeeld over alle bestanden
+      this.saveChecklist();
+      this.cur = null; this.doc = null; this.page = 1;
+      this.fit = true; this.zoom = 1;
+      this.tool = null;             // 'highlight' | 'circle' | null
+      this.color = 'red';           // huidige tekenkleur ('red' | 'yellow' | 'green')
+      this.selectedIndex = null;    // index van de geselecteerde markering op de huidige pagina (of null)
+      this.selectedLabelBox = null; // vak van het foutentype-label van de geselecteerde markering (voor slepen)
+      this.selectedHandleBox = null; // positie van het losse grijp-icoontje naast het geselecteerde bolletje
+      this.draggingLabel = false; this.labelDragStart = null;
+      this.draggingSymbol = false; this.symbolDragStart = null;
+      this.drawing = false; this.start = null;
+      this.thumbDrag = null; // actieve kader-selectie op een miniatuur (of null)
+      this.bind(); this.render();
+      if(this.storageMode!=='ok') this.showStorageBanner(this.storageMode);
+    }
+
+    /* ---------- persistence (metadata only) ---------- */
+    // Test of localStorage effectief bruikbaar is: sommige omgevingen (incognito-
+    // vensters, of een bestand rechtstreeks vanaf SharePoint/netwerkschijf geopend)
+    // blokkeren localStorage volledig, wat een andere boodschap verdient dan "vol".
+    probeStorage(){
+      try{
+        const k='__pdfReviewProbe__';
+        localStorage.setItem(k,'1');
+        localStorage.removeItem(k);
+        return 'ok';
+      }catch(e){ return 'blocked'; }
+    }
+    showStorageBanner(kind){
+      const b=document.getElementById('storageBanner');
+      if(!b) return;
+      if(kind==='blocked'){
+        b.textContent='⚠ Lokale opslag is niet beschikbaar in deze omgeving (bv. een incognito-venster, of dit bestand rechtstreeks geopend vanaf SharePoint/een netwerkschijf). Je review blijft enkel bewaard zolang dit tabblad open staat — exporteer op tijd, of open het bestand vanuit een gewone lokale map.';
+        b.style.display='block';
+      } else if(kind==='full'){
+        b.textContent='⚠ De lokale opslag zit vol — nieuwe wijzigingen worden niet meer bewaard. Verwijder overbodige bestanden (Clear all) of exporteer je werk, en herlaad daarna de pagina.';
+        b.style.display='block';
+      } else {
+        b.style.display='none';
+      }
+    }
+    loadMeta(){ try{ return JSON.parse(localStorage.getItem(META_KEY)) || {}; }catch(e){ return {}; } }
+    loadChecklist(){
+      let list;
+      try{
+        const raw = JSON.parse(localStorage.getItem(CHECKLIST_KEY));
+        list = (Array.isArray(raw) && raw.length) ? raw : DEFAULT_CHECKLIST.map(x=>({...x}));
+      }catch(e){
+        list = DEFAULT_CHECKLIST.map(x=>({...x}));
+      }
+      // nieuwe standaard-foutentypes die nog niet in een eerder opgeslagen checklist zaten, aanvullen
+      const existing = new Set(list.map(x=>String(x.label).toLowerCase()));
+      DEFAULT_CHECKLIST.forEach(def=>{
+        if(!existing.has(def.label.toLowerCase())) list.push({...def});
+      });
+      return list;
+    }
+    saveChecklist(){ try{ localStorage.setItem(CHECKLIST_KEY, JSON.stringify(this.checklist)); }catch(e){} }
+    flashSaved(){
+      const el=document.getElementById('saveIndicator');
+      if(!el) return;
+      el.textContent='Opgeslagen ✓'; el.classList.remove('warn'); el.classList.add('show');
+      clearTimeout(this._saveTimer);
+      this._saveTimer=setTimeout(()=> el.classList.remove('show'), 1400);
+    }
+    flashSaveFailed(){
+      const el=document.getElementById('saveIndicator');
+      if(!el) return;
+      clearTimeout(this._saveTimer);
+      el.textContent='Niet opgeslagen ⚠'; el.classList.add('show','warn');
+    }
+    saveMeta(){
+      this.pdfs.forEach(p => {
+        this.meta[p.filename] = { hasErrors:p.hasErrors, notes:p.notes, annotations:p.annotations };
+      });
+      try{
+        localStorage.setItem(META_KEY, JSON.stringify(this.meta));
+        if(this.storageMode!=='ok'){ this.storageMode='ok'; this.showStorageBanner('ok'); }
+        this.flashSaved();
+      }catch(e){
+        const full = e && (e.name==='QuotaExceededError' || e.code===22 || e.code===1014);
+        this.storageMode = full ? 'full' : 'blocked';
+        this.showStorageBanner(this.storageMode);
+        this.flashSaveFailed();
+      }
+    }
+
+    /* ---------- events ---------- */
+    bind(){
+      const $ = id => document.getElementById(id);
+      const drop = $('drop');
+      ['dragenter','dragover'].forEach(ev => drop.addEventListener(ev, e => {e.preventDefault(); drop.classList.add('active');}));
+      ['dragleave','drop'].forEach(ev => drop.addEventListener(ev, e => {e.preventDefault(); drop.classList.remove('active');}));
+      drop.addEventListener('drop', e => this.intake(e.dataTransfer.files));
+      drop.addEventListener('click', e => { if(e.target.id!=='selectBtn') $('fileInput').click(); });
+      $('selectBtn').addEventListener('click', e=>{e.stopPropagation(); $('fileInput').click();});
+      $('fileInput').addEventListener('change', e => { this.intake(e.target.files); e.target.value=''; });
+
+      $('addMore').addEventListener('click', ()=> $('fileInput').click());
+      $('filterErr').addEventListener('change', ()=> this.render());
+      $('searchFile').addEventListener('input', ()=> this.render());
+      $('sortBy').addEventListener('change', ()=> this.render());
+      $('exportBtn').addEventListener('click', ()=> this.exportReport());
+      $('exportSummaryBtn').addEventListener('click', ()=> this.exportSummary());
+      $('exportAnnBtn').addEventListener('click', ()=> this.exportAnnotationOverview());
+      $('resetBtn').addEventListener('click', ()=> this.reset());
+
+      $('vClose').addEventListener('click', ()=> this.close());
+      $('zIn').addEventListener('click', ()=> this.zoomBy(1.25));
+      $('zOut').addEventListener('click', ()=> this.zoomBy(0.8));
+      $('zFit').addEventListener('click', ()=> { this.fit=true; this.zoom=1; this.draw(); });
+      window.addEventListener('resize', ()=> { if(this.doc && this.fit) this.draw(); });
+      $('prev').addEventListener('click', ()=> this.go(-1));
+      $('next').addEventListener('click', ()=> this.go(1));
+      $('prevFile').addEventListener('click', ()=> this.openByOffset(-1));
+      $('nextFile').addEventListener('click', ()=> this.openByOffset(1));
+      window.addEventListener('keydown', e => this.onKey(e));
+      $('errCheck').addEventListener('change', e => this.setError(e.target.checked));
+      $('noteAdd').addEventListener('click', ()=> this.addNote());
+      $('noteInput').addEventListener('keypress', e => { if(e.key==='Enter') this.addNote(); });
+      $('tHighlight').addEventListener('click', ()=> this.pickTool('highlight'));
+      $('tCircle').addEventListener('click', ()=> this.pickTool('circle'));
+      $('tArrow').addEventListener('click', ()=> this.pickTool('arrow'));
+      $('tLine').addEventListener('click', ()=> this.pickTool('line'));
+      $('tFree').addEventListener('click', ()=> this.pickTool('free'));
+      $('tNumber').addEventListener('click', ()=> this.pickTool('number'));
+      $('tDelete').addEventListener('click', ()=> this.pickTool('delete'));
+      document.querySelectorAll('.swatch').forEach(btn=>{
+        btn.addEventListener('click', ()=> this.setColor(btn.dataset.color));
+      });
+      $('markList').addEventListener('click', e=>{
+        const delBtn=e.target.closest('button[data-del]');
+        if(delBtn){
+          const i=+delBtn.dataset.del;
+          const list=this.cur && this.cur.annotations[this.page];
+          if(list && list[i]){
+            list.splice(i,1);
+            if(this.selectedIndex===i) this.deselect();
+            else if(this.selectedIndex!=null && this.selectedIndex>i) this.selectedIndex--;
+            this.renumberPage();
+            this.saveMeta();
+            this.drawOverlay();
+            this.renderMarkList();
+            this.render();
+          }
+          return;
+        }
+        const row=e.target.closest('li[data-i]');
+        if(row) this.selectAnnotation(+row.dataset.i);
+      });
+      $('tUndo').addEventListener('click', ()=> this.undo());
+      $('tClear').addEventListener('click', ()=> this.clearPage());
+      $('selectedClose').addEventListener('click', ()=> this.deselect());
+      $('checklistDropdownBtn').addEventListener('click', e=>{
+        e.stopPropagation();
+        const panel=$('checklistDropdownPanel');
+        const open = panel.style.display!=='none';
+        panel.style.display = open ? 'none' : 'block';
+        $('checklistDropdownBtn').classList.toggle('open', !open);
+      });
+      document.addEventListener('click', e=>{
+        const dd=$('checklistDropdown');
+        if(dd && !dd.contains(e.target)){
+          $('checklistDropdownPanel').style.display='none';
+          $('checklistDropdownBtn').classList.remove('open');
+        }
+      });
+      $('selectedDelete').addEventListener('click', ()=>{
+        if(this.selectedIndex==null || !this.cur) return;
+        const list=this.cur.annotations[this.page];
+        list.splice(this.selectedIndex,1);
+        this.renumberPage();
+        this.deselect();
+        this.saveMeta();
+        this.drawOverlay();
+        this.renderMarkList();
+        this.render();
+      });
+      $('selectedNote').addEventListener('input', e=>{
+        const list=this.cur && this.cur.annotations[this.page];
+        const a=list && list[this.selectedIndex];
+        if(a){ a.note=e.target.value; this.saveMeta(); this.renderMarkList(); }
+      });
+      $('selectedChecklistAdd').addEventListener('click', ()=> this.addChecklistItemToSelected());
+      $('selectedChecklistNew').addEventListener('keypress', e=>{ if(e.key==='Enter') this.addChecklistItemToSelected(); });
+      $('selectedChecklist').addEventListener('change', e=>{
+        const cb=e.target;
+        if(cb.tagName==='INPUT' && cb.type==='checkbox'){
+          const list=this.cur && this.cur.annotations[this.page];
+          const a=list && list[this.selectedIndex];
+          if(!a) return;
+          if(!a.checklist) a.checklist=[];
+          const id=cb.dataset.id;
+          if(cb.checked){
+            if(!a.checklist.includes(id)) a.checklist.push(id);
+            // een foutentype aanvinken op een markering betekent per definitie dat dit bestand een fout heeft
+            if(!this.cur.hasErrors){
+              this.cur.hasErrors=true;
+              document.getElementById('errCheck').checked=true;
+              document.getElementById('errToggle').classList.add('on');
+              this.updateFileNav();
+            }
+          } else { a.checklist=a.checklist.filter(x=>x!==id); }
+          this.saveMeta();
+          this.drawOverlay();
+          this.renderMarkList();
+          this.render();
+          this.updateChecklistDropdownLabel(a);
+        }
+      });
+      $('selectedChecklist').addEventListener('click', e=>{
+        const btn=e.target.closest('button[data-removeitem]');
+        if(!btn) return;
+        const id=btn.dataset.removeitem;
+        const item=this.checklist.find(x=>x.id===id);
+        if(item && confirm(`Foutentype "${item.label}" verwijderen uit de checklist (voor alle bestanden en markeringen)?`)){
+          this.checklist = this.checklist.filter(x=>x.id!==id);
+          this.saveChecklist();
+          this.pdfs.forEach(p=>{
+            Object.values(p.annotations||{}).forEach(list=>{
+              list.forEach(a=>{ if(a.checklist) a.checklist=a.checklist.filter(x=>x!==id); });
+            });
+          });
+          this.saveMeta();
+          this.renderSelectedPanel();
+          this.renderMarkList();
+          this.render();
+          this.drawOverlay();
+        }
+      });
+
+      const ov = $('overlay');
+      ov.addEventListener('mousedown', e => this.down(e));
+      window.addEventListener('mousemove', e => this.move(e));
+      window.addEventListener('mouseup', e => this.up(e));
+      window.addEventListener('mousemove', e => this.onThumbDragMove(e));
+      window.addEventListener('mouseup', e => this.onThumbDragUp(e));
+    }
+
+    /* ---------- intake ---------- */
+    reset(){
+      if(!confirm('Clear all loaded PDFs and their review (errors, notes, markings)?\n\nThis cannot be undone.')) return;
+      this.pdfs = [];
+      this.meta = {};
+      try{ localStorage.removeItem(META_KEY); }catch(e){}
+      document.getElementById('filterErr').checked = false;
+      document.getElementById('searchFile').value = '';
+      document.getElementById('sortBy').value = 'name-asc';
+      this.render();
+    }
+
+    intake(fileList){
+      const files = Array.from(fileList).filter(f =>
+        f.type === 'application/pdf' || /\.pdf$/i.test(f.name));
+      const room = 150 - this.pdfs.length;
+      const toLoad = files.slice(0, room);
+      if(!toLoad.length) return;
+      let done = 0, idx = 0;
+      const total = toLoad.length;
+      // Bij veel bestanden tegelijk niet na élk bestand de volledige lijst hertekenen
+      // (dat is O(n) per bestand, dus O(n²) in totaal) — wel tussentijds af en toe,
+      // zodat je voortgang ziet, en zeker één keer aan het einde.
+      const maybeRender = () => { if(done===total || done % 15===0) this.render(); };
+      // Niet alle bestanden tegelijk lezen: een beperkt aantal gelijktijdige lezingen
+      // is sneller en soepeler, zeker bij bestanden vanaf een netwerkschijf/SharePoint,
+      // waar te veel parallelle lezingen elkaar net vertragen.
+      const CONCURRENCY = 6;
+      const readOne = file => new Promise(resolve => {
+        const fr = new FileReader();
+        fr.onload = e => {
+          const saved = this.meta[file.name] || {};
+          this.pdfs.push({
+            id: Date.now() + Math.random(),
+            filename: file.name,
+            bytes: new Uint8Array(e.target.result),
+            hasErrors: !!saved.hasErrors,
+            notes: saved.notes || [],
+            annotations: saved.annotations || {}
+          });
+          done++; maybeRender(); resolve();
+        };
+        fr.onerror = () => { done++; maybeRender(); resolve(); };
+        fr.readAsArrayBuffer(file);
+      });
+      const worker = async () => { while(idx < total) await readOne(toLoad[idx++]); };
+      for(let w=0; w<Math.min(CONCURRENCY, total); w++) worker();
+    }
+
+    /* ---------- viewer ---------- */
+    async open(id){
+      const pdf = this.pdfs.find(p => p.id === id);
+      if(!pdf) return;
+      this.cur = pdf; this.page = 1; this.tool = null; this.fit = true; this.zoom = 1;
+      this.selectedIndex = null;
+      try{
+        // slice() => fresh copy so pdf.js never detaches our stored bytes
+        this.doc = await pdfjsLib.getDocument({ data: pdf.bytes.slice() }).promise;
+      }catch(err){ alert('Kon PDF niet openen: ' + err.message); return; }
+      document.getElementById('vTitle').textContent = pdf.filename;
+      document.getElementById('pTot').textContent = this.doc.numPages;
+      document.getElementById('errCheck').checked = pdf.hasErrors;
+      document.getElementById('errToggle').classList.toggle('on', pdf.hasErrors);
+      document.getElementById('selectedSec').style.display = 'none';
+      this.syncToolButtons();
+      document.getElementById('modal').classList.add('open');
+      this.updateFileNav();
+      await this.draw(); this.renderNotes();
+      this.buildThumbnails(); // pas ná de hoofdpagina, zodat die niet moet wachten op alle miniaturen
+    }
+    close(){
+      document.getElementById('modal').classList.remove('open');
+      this.cur=null; this.doc=null; this.tool=null; this.render();
+    }
+    go(d){
+      const n = this.page + d;
+      if(n>=1 && n<=this.doc.numPages){ this.page=n; this.selectedIndex=null; this.draw(); }
+    }
+
+    /* ---------- paginaminiaturen ---------- */
+    async buildThumbnails(){
+      const wrap = document.getElementById('thumbs');
+      wrap.innerHTML = '';
+      const total = this.doc.numPages;
+      const EAGER_LIMIT = 60; // boven dit aantal: enkel paginanummers, geen gerenderde beeldjes (snelheid)
+      const myDoc = this.doc;
+      for(let i=1;i<=total;i++){
+        const btn = document.createElement('div');
+        btn.className = 'thumb';
+        btn.dataset.page = i;
+        btn.title = 'Klik = ga naar pagina ' + i + ' · sleep een kader = zoom op die zone';
+        const imgWrap = document.createElement('div');
+        imgWrap.className = 'thumb-imgwrap';
+        const sel = document.createElement('div');
+        sel.className = 'thumb-sel';
+        imgWrap.appendChild(sel);
+        imgWrap.addEventListener('mousedown', e=>{
+          e.preventDefault(); e.stopPropagation();
+          const p=this.thumbFrac(imgWrap,e);
+          this.thumbDrag={ page:i, imgWrap, sel, sx:p.x, sy:p.y };
+          sel.style.left=(p.x*100)+'%'; sel.style.top=(p.y*100)+'%';
+          sel.style.width='0'; sel.style.height='0';
+          sel.style.display='block';
+        });
+        btn.appendChild(imgWrap);
+        const label = document.createElement('span');
+        label.className = 'thumb-num';
+        label.textContent = i;
+        btn.appendChild(label);
+        wrap.appendChild(btn);
+      }
+      this.updateThumbActive();
+      if(total > EAGER_LIMIT) return;
+      const thumbW = 74;
+      for(let i=1;i<=total;i++){
+        if(this.doc !== myDoc) return; // ondertussen een ander bestand geopend
+        try{
+          const page = await myDoc.getPage(i);
+          const base = page.getViewport({ scale:1 });
+          const scale = thumbW / base.width;
+          const vp = page.getViewport({ scale });
+          const c = document.createElement('canvas');
+          c.width = Math.round(vp.width); c.height = Math.round(vp.height);
+          await page.render({ canvasContext:c.getContext('2d'), viewport:vp }).promise;
+          if(this.doc !== myDoc) return;
+          const btn = wrap.children[i-1];
+          if(btn){
+            const imgWrap = btn.querySelector('.thumb-imgwrap');
+            imgWrap.insertBefore(c, imgWrap.firstChild);
+          }
+        }catch(e){ /* stil negeren: valt terug op paginanummer */ }
+      }
+    }
+    /* ---------- kader-selectie op miniaturen: sleep = inzoomen op die zone ---------- */
+    thumbFrac(el,e){
+      const r=el.getBoundingClientRect();
+      const x=Math.min(Math.max((e.clientX-r.left)/Math.max(r.width,1),0),1);
+      const y=Math.min(Math.max((e.clientY-r.top)/Math.max(r.height,1),0),1);
+      return {x,y};
+    }
+    onThumbDragMove(e){
+      const d=this.thumbDrag; if(!d) return;
+      const p=this.thumbFrac(d.imgWrap,e);
+      const x0=Math.min(d.sx,p.x), y0=Math.min(d.sy,p.y);
+      const x1=Math.max(d.sx,p.x), y1=Math.max(d.sy,p.y);
+      d.sel.style.left=(x0*100)+'%'; d.sel.style.top=(y0*100)+'%';
+      d.sel.style.width=((x1-x0)*100)+'%'; d.sel.style.height=((y1-y0)*100)+'%';
+    }
+    onThumbDragUp(e){
+      const d=this.thumbDrag; if(!d) return;
+      this.thumbDrag=null;
+      const p=this.thumbFrac(d.imgWrap,e);
+      const x0=Math.min(d.sx,p.x), y0=Math.min(d.sy,p.y);
+      const x1=Math.max(d.sx,p.x), y1=Math.max(d.sy,p.y);
+      d.sel.style.display='none';
+      if((x1-x0)<0.03 || (y1-y0)<0.03){
+        // te kleine sleep = gewone klik: gewoon naar de pagina springen
+        this.page=d.page; this.fit=true; this.zoom=1; this.selectedIndex=null; this.draw();
+      } else {
+        this.zoomToSelection(d.page, {x0,y0,x1,y1});
+      }
+    }
+    async zoomToSelection(pageIndex, rect){
+      if(!this.doc) return;
+      this.page = pageIndex;
+      this.selectedIndex = null;
+      let page;
+      try{ page = await this.doc.getPage(pageIndex); }catch(e){ return; }
+      const base = page.getViewport({ scale:1 });
+      const wrap = document.querySelector('.canvas-wrap');
+      const availW = Math.max(200, wrap.clientWidth - 40);
+      const availH = Math.max(200, wrap.clientHeight - 40);
+      const rectW = Math.max(0.01, rect.x1-rect.x0);
+      const rectH = Math.max(0.01, rect.y1-rect.y0);
+      const fitScale = availW / base.width; // komt overeen met zoom=1 in fit-modus (zie draw())
+      const targetScale = Math.min(availW/(rectW*base.width), availH/(rectH*base.height));
+      this.fit = true;
+      this.zoom = Math.min(10, Math.max(0.25, targetScale/fitScale));
+      await this.draw();
+      const cx=(rect.x0+rect.x1)/2, cy=(rect.y0+rect.y1)/2;
+      const stage=document.getElementById('stage');
+      wrap.scrollLeft = cx*stage.offsetWidth - wrap.clientWidth/2;
+      wrap.scrollTop  = cy*stage.offsetHeight - wrap.clientHeight/2;
+    }
+    updateThumbActive(){
+      const wrap = document.getElementById('thumbs');
+      if(!wrap) return;
+      Array.from(wrap.children).forEach(btn=>{
+        const active = +btn.dataset.page === this.page;
+        btn.classList.toggle('active', active);
+        if(active) btn.scrollIntoView({ block:'nearest' });
+      });
+    }
+
+    // The list as currently shown (respects the 'errors only' filter)
+    order(){
+      const onlyErr = document.getElementById('filterErr').checked;
+      return onlyErr ? this.pdfs.filter(p=>p.hasErrors) : this.pdfs;
+    }
+    openByOffset(d){
+      const list = this.order();
+      if(!list.length) return;
+      const i = list.findIndex(p=>p.id===this.cur.id);
+      if(i<0){ this.open((d>0?list[0]:list[list.length-1]).id); return; }
+      const ni = i+d;
+      if(ni>=0 && ni<list.length) this.open(list[ni].id);
+    }
+    updateFileNav(){
+      const list = this.order();
+      const i = list.findIndex(p=>p.id===this.cur.id);
+      document.getElementById('filePos').textContent =
+        (i<0 ? '–' : (i+1)) + ' / ' + list.length;
+      document.getElementById('prevFile').disabled = i<=0;
+      document.getElementById('nextFile').disabled = i<0 ? list.length===0 : i>=list.length-1;
+    }
+    onKey(e){
+      if(!this.cur) return;                       // alleen actief in de viewer
+      if(e.target && (e.target.tagName==='INPUT' || e.target.tagName==='TEXTAREA')) return; // niet tijdens typen
+      const k = e.key.toLowerCase();
+      if((e.ctrlKey || e.metaKey) && k==='z'){ e.preventDefault(); this.undo(); return; }
+      if(e.key==='ArrowRight'){ e.preventDefault(); this.go(1); }
+      else if(e.key==='ArrowLeft'){ e.preventDefault(); this.go(-1); }
+      else if(k==='n' || e.key==='PageDown'){ e.preventDefault(); this.openByOffset(1); }
+      else if(k==='p' || e.key==='PageUp'){ e.preventDefault(); this.openByOffset(-1); }
+      else if(k==='f'){
+        e.preventDefault();
+        const cb=document.getElementById('errCheck');
+        cb.checked=!cb.checked; this.setError(cb.checked);
+      }
+      else if(k==='h'){ e.preventDefault(); this.pickTool('highlight'); }
+      else if(k==='c'){ e.preventDefault(); this.pickTool('circle'); }
+      else if(k==='a'){ e.preventDefault(); this.pickTool('arrow'); }
+      else if(k==='l'){ e.preventDefault(); this.pickTool('line'); }
+      else if(k==='v'){ e.preventDefault(); this.pickTool('free'); }
+      else if(k==='g'){ e.preventDefault(); this.pickTool('number'); }
+      else if(k==='d'){ e.preventDefault(); this.pickTool('delete'); }
+      else if(k==='u'){ e.preventDefault(); this.undo(); }
+      else if(e.key==='Escape'){
+        e.preventDefault();
+        if(this.selectedIndex!=null){ this.deselect(); }
+        else if(this.tool){ this.tool=null; this.syncToolButtons(); }
+        else { this.close(); }
+      }
+    }
+
+    async draw(){
+      const page = await this.doc.getPage(this.page);
+      const base = page.getViewport({ scale: 1 });
+      let scale;
+      if(this.fit){
+        const wrap = document.querySelector('.canvas-wrap');
+        const avail = Math.max(280, wrap.clientWidth - 40); // minus padding
+        scale = (avail / base.width) * this.zoom;
+      } else {
+        scale = 1.5 * this.zoom;
+      }
+      // CSS-viewport bepaalt de weergavegrootte (schermpixels/CSS-px),
+      // render-viewport bepaalt de werkelijke resolutie van de canvasbuffer
+      // (rekening houdend met devicePixelRatio) zodat het beeld scherp blijft
+      // op retina/HiDPI-schermen en bij sterk inzoomen.
+      const dpr = Math.min(window.devicePixelRatio || 1, 3);
+      const cssVp = page.getViewport({ scale });
+      let renderScale = scale * dpr;
+      let renderVp = page.getViewport({ scale: renderScale });
+      // Browsers hebben een maximale canvasgrootte (afmeting én totaal aantal
+      // pixels). Bij sterk inzoomen op een groot schema kan die overschreden
+      // worden, waardoor het canvas gewoon leeg blijft. Verlaag in dat geval
+      // de effectieve renderresolutie (niet de zoom/weergavegrootte zelf),
+      // zodat er altijd iets getekend wordt — desnoods iets minder scherp.
+      const MAX_DIM = 14000, MAX_AREA = 100000000;
+      let shrink = 1;
+      if(renderVp.width > MAX_DIM) shrink = Math.min(shrink, MAX_DIM / renderVp.width);
+      if(renderVp.height > MAX_DIM) shrink = Math.min(shrink, MAX_DIM / renderVp.height);
+      if(renderVp.width * renderVp.height > MAX_AREA) shrink = Math.min(shrink, Math.sqrt(MAX_AREA / (renderVp.width * renderVp.height)));
+      if(shrink < 1){
+        renderScale *= shrink;
+        renderVp = page.getViewport({ scale: renderScale });
+      }
+      this.dpr = renderScale / scale; // effectieve verhouding ná eventuele verkleining, voor de overlay-transform
+      this.cssW = cssVp.width; this.cssH = cssVp.height;
+      const c = document.getElementById('pdfCanvas');
+      const ov = document.getElementById('overlay');
+      c.width = ov.width = Math.round(renderVp.width);
+      c.height = ov.height = Math.round(renderVp.height);
+      c.style.width = ov.style.width = Math.round(cssVp.width) + 'px';
+      c.style.height = ov.style.height = Math.round(cssVp.height) + 'px';
+      document.getElementById('stage').style.width = Math.round(cssVp.width) + 'px';
+      await page.render({ canvasContext: c.getContext('2d'), viewport: renderVp }).promise;
+      document.getElementById('pNum').textContent = this.page;
+      document.getElementById('prev').disabled = this.page===1;
+      document.getElementById('next').disabled = this.page===this.doc.numPages;
+      this.updateThumbActive();
+      this.drawOverlay();
+      this.renderMarkList();
+      this.renderSelectedPanel();
+    }
+    zoomBy(f){ this.fit=true; this.zoom=Math.min(10, Math.max(0.25, this.zoom*f)); this.draw(); }
+
+    drawOverlay(preview){
+      const ov = document.getElementById('overlay');
+      const ctx = ov.getContext('2d');
+      const dpr = this.dpr || 1;
+      const W = this.cssW || (ov.width/dpr), H = this.cssH || (ov.height/dpr);
+      // canvasbuffer is groter dan de CSS-weergave (devicePixelRatio), dus we
+      // tekenen in CSS-pixelruimte en schalen de context mee omhoog, zodat
+      // lijndiktes/tekstgroottes er op elk scherm even groot uitzien.
+      ctx.setTransform(dpr,0,0,dpr,0,0);
+      ctx.clearRect(0,0,W,H);
+      this.selectedLabelBox = null;
+      this.selectedHandleBox = null;
+      const list = (this.cur.annotations[this.page] || []).slice();
+      if(preview) list.push(preview);
+      list.forEach(a => this.paint(ctx, a, W, H));
+      if(!preview && this.selectedIndex!=null){
+        const sel=(this.cur.annotations[this.page]||[])[this.selectedIndex];
+        if(sel){
+          this.paintSelection(ctx, sel, W, H);
+          if(sel.type==='number') this.paintSymbolHandle(ctx, sel, W, H);
+        }
+      }
+    }
+    // Klein, apart grijp-icoontje vlak naast het geselecteerde Annotatie-bolletje —
+    // duidelijk zichtbaar teken dat je het kan verslepen (het bolletje zelf is te
+    // klein geworden om er een icoon op te tekenen).
+    paintSymbolHandle(ctx, a, W, H){
+      const r = Math.max(3.3, Math.min(W,H)*0.0048);
+      const cx = a.x*W, cy = a.y*H;
+      const hr = 8; // straal van het handvat-icoontje zelf
+      const hx = cx - r - hr - 6, hy = cy + r + hr + 6; // links-onder van het bolletje
+      ctx.save();
+      ctx.beginPath(); ctx.arc(hx, hy, hr, 0, Math.PI*2);
+      ctx.fillStyle = 'rgba(255,255,255,0.95)';
+      ctx.fill();
+      ctx.strokeStyle = '#16191f'; ctx.lineWidth = 1;
+      ctx.setLineDash([2,2]); ctx.stroke(); ctx.setLineDash([]);
+      ctx.fillStyle = '#16191f';
+      ctx.font = '700 10px "IBM Plex Sans", sans-serif';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText('⠿', hx, hy+0.5);
+      ctx.restore();
+      // kleine verbindingslijn zodat duidelijk is bij welk bolletje het handvat hoort
+      ctx.save();
+      ctx.strokeStyle = 'rgba(22,25,31,0.35)'; ctx.lineWidth = 1; ctx.setLineDash([2,2]);
+      ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(hx,hy); ctx.stroke();
+      ctx.restore();
+      this.selectedHandleBox = { cx:hx, cy:hy, r:hr+6 }; // +6 extra grijpmarge
+    }
+    bboxOf(a){
+      if(a.type==='highlight'||a.type==='circle') return {x:a.x,y:a.y,w:a.w,h:a.h};
+      if(a.type==='line'||a.type==='arrow'){
+        const x=Math.min(a.x1,a.x2), y=Math.min(a.y1,a.y2);
+        return {x,y,w:Math.abs(a.x2-a.x1),h:Math.abs(a.y2-a.y1)};
+      }
+      if(a.type==='free'){
+        if(!a.pts || !a.pts.length) return null;
+        const xs=a.pts.map(p=>p.x), ys=a.pts.map(p=>p.y);
+        const x=Math.min(...xs), y=Math.min(...ys);
+        return {x,y,w:Math.max(...xs)-x,h:Math.max(...ys)-y};
+      }
+      return null;
+    }
+    paintSelection(ctx,a,W,H){
+      ctx.save();
+      ctx.setLineDash([5,4]);
+      ctx.strokeStyle='#16191f';
+      ctx.lineWidth=1.5;
+      if(a.type==='number'){
+        const x=a.x*W, y=a.y*H;
+        const r=Math.max(3.3, Math.min(W,H)*0.0048)+3;
+        ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.stroke();
+      } else {
+        const b=this.bboxOf(a);
+        if(b){
+          const pad=6;
+          ctx.strokeRect(b.x*W-pad, b.y*H-pad, b.w*W+2*pad, b.h*H+2*pad);
+        }
+      }
+      ctx.restore();
+    }
+    paint(ctx, a, W, H){
+      const pal = PALETTE[a.color] || PALETTE.red;
+      const R = pal.stroke;
+      if(a.type==='highlight'){
+        const x=a.x*W,y=a.y*H,w=a.w*W,h=a.h*H;
+        ctx.fillStyle=pal.fill; ctx.fillRect(x,y,w,h);
+        ctx.strokeStyle=R; ctx.lineWidth=1; ctx.strokeRect(x,y,w,h);
+      } else if(a.type==='circle'){
+        const x=a.x*W,y=a.y*H,w=a.w*W,h=a.h*H;
+        ctx.strokeStyle=R; ctx.lineWidth=3;
+        ctx.beginPath();
+        ctx.ellipse(x+w/2,y+h/2,Math.abs(w/2),Math.abs(h/2),0,0,Math.PI*2);
+        ctx.stroke();
+      } else if(a.type==='line' || a.type==='arrow'){
+        const x1=a.x1*W,y1=a.y1*H,x2=a.x2*W,y2=a.y2*H;
+        ctx.strokeStyle=R; ctx.lineWidth=2.5; ctx.lineCap='round';
+        ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+        if(a.type==='arrow'){
+          const ang=Math.atan2(y2-y1,x2-x1);
+          const len=Math.max(10,Math.min(24,Math.hypot(x2-x1,y2-y1)*0.25));
+          ctx.beginPath();
+          ctx.moveTo(x2,y2); ctx.lineTo(x2-len*Math.cos(ang-Math.PI/7), y2-len*Math.sin(ang-Math.PI/7));
+          ctx.moveTo(x2,y2); ctx.lineTo(x2-len*Math.cos(ang+Math.PI/7), y2-len*Math.sin(ang+Math.PI/7));
+          ctx.stroke();
+        }
+      } else if(a.type==='free'){
+        if(!a.pts || a.pts.length<2) return;
+        ctx.strokeStyle=R; ctx.lineWidth=2.5; ctx.lineCap='round'; ctx.lineJoin='round';
+        ctx.beginPath(); ctx.moveTo(a.pts[0].x*W, a.pts[0].y*H);
+        for(let i=1;i<a.pts.length;i++) ctx.lineTo(a.pts[i].x*W, a.pts[i].y*H);
+        ctx.stroke();
+      } else if(a.type==='number'){
+        const x=a.x*W, y=a.y*H;
+        const r = Math.max(3.3, Math.min(W,H)*0.0048);
+        ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2);
+        ctx.fillStyle=R; ctx.fill();
+        ctx.lineWidth=1.5; ctx.strokeStyle='#fff'; ctx.stroke();
+        ctx.fillStyle='#fff';
+        ctx.font = `bold ${Math.round(r*1.15)}px sans-serif`;
+        ctx.textAlign='center'; ctx.textBaseline='middle';
+        ctx.fillText(String(a.n), x, y+1);
+      }
+      this.paintChecklistLabel(ctx, a, W, H);
+    }
+    // Toont het/de aangevinkte foutentype(s) als rode tekst met een witte achtergrond
+    // vlak naast de markering zelf, zodat je niet in de zijbalk moet kijken.
+    paintChecklistLabel(ctx, a, W, H){
+      if(!a.checklist || !a.checklist.length) return;
+      const labels = a.checklist.map(id=>{
+        const it=this.checklist.find(x=>x.id===id);
+        return it ? it.label : null;
+      }).filter(Boolean);
+      if(!labels.length) return;
+      const text = labels.join(', ');
+      const list=this.cur && this.cur.annotations[this.page];
+      const isSelected = list && list[this.selectedIndex]===a;
+      let ax, ay;
+      if(a.type==='highlight'||a.type==='circle'){
+        ax = a.x*W; ay = a.y*H;
+      } else if(a.type==='line'||a.type==='arrow'){
+        ax = Math.min(a.x1,a.x2)*W; ay = Math.min(a.y1,a.y2)*H;
+      } else if(a.type==='free'){
+        if(!a.pts || !a.pts.length) return;
+        ax = a.pts[0].x*W; ay = a.pts[0].y*H;
+      } else if(a.type==='number'){
+        const r = Math.max(3.3, Math.min(W,H)*0.0048);
+        ax = a.x*W + r + 6; ay = a.y*H;
+      } else return;
+      // handmatig verschoven positie (versleept door de gebruiker), bovenop het automatische ankerpunt
+      ax += (a.labelDx||0)*W;
+      ay += (a.labelDy||0)*H;
+
+      ctx.save();
+      ctx.font = '600 12px "IBM Plex Sans", sans-serif';
+      ctx.textBaseline = 'middle';
+      ctx.textAlign = 'left';
+      const tw = ctx.measureText(text).width;
+      const handleW = isSelected ? 16 : 0; // ruimte voor het sleepgreepje, enkel bij de geselecteerde markering
+      const padX=5, padY=3, boxH=14+padY*2;
+      const boxX = ax;
+      const boxY = Math.max(0, ay - 8 - boxH); // net boven de markering, maar niet buiten beeld
+      const boxW = tw+padX*2+handleW;
+      ctx.fillStyle = 'rgba(255,255,255,0.95)';
+      ctx.fillRect(boxX-padX, boxY, boxW, boxH);
+      ctx.strokeStyle = isSelected ? '#16191f' : 'rgba(0,0,0,0.12)';
+      ctx.lineWidth = 1;
+      if(isSelected) ctx.setLineDash([3,2]);
+      ctx.strokeRect(boxX-padX, boxY, boxW, boxH);
+      ctx.setLineDash([]);
+      ctx.fillStyle = '#dc2626';
+      ctx.fillText(text, boxX, boxY + boxH/2);
+      if(isSelected){
+        // klein sleepgreepje rechts van de tekst, als duidelijk visueel teken dat dit label verplaatsbaar is
+        ctx.fillStyle = '#8a8f98';
+        ctx.font = '700 11px "IBM Plex Sans", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('⠿', boxX+tw+padX+handleW/2, boxY+boxH/2);
+      }
+      ctx.restore();
+
+      // onthoud het vak van het label van de geselecteerde markering, zodat down()/move()
+      // kunnen detecteren of je het label vastgrijpt om te verslepen (met wat extra marge
+      // rondom, zodat het gemakkelijker te grijpen is dan de strikt zichtbare rand)
+      if(isSelected){
+        const grab=3;
+        this.selectedLabelBox = { x:boxX-padX-grab, y:boxY-grab, w:boxW+grab*2, h:boxH+grab*2 };
+      }
+    }
+
+    /* ---------- annotation tools ---------- */
+    pickTool(t){ this.tool = (this.tool===t) ? null : t; this.syncToolButtons(); }
+    setColor(key){
+      this.color = key;
+      document.querySelectorAll('.swatch').forEach(b=> b.classList.toggle('active', b.dataset.color===key));
+    }
+    syncToolButtons(){
+      const map={tHighlight:'highlight',tCircle:'circle',tArrow:'arrow',tLine:'line',tFree:'free',tNumber:'number',tDelete:'delete'};
+      Object.entries(map).forEach(([id,t])=>
+        document.getElementById(id).classList.toggle('active', this.tool===t));
+      const ov = document.getElementById('overlay');
+      ov.style.cursor = this.tool ? (this.tool==='delete' ? 'pointer' : 'crosshair') : 'grab';
+    }
+    norm(e){
+      const ov = document.getElementById('overlay');
+      const r = ov.getBoundingClientRect();
+      return { x:(e.clientX-r.left)/r.width, y:(e.clientY-r.top)/r.height };
+    }
+    down(e){
+      if(!this.tool){
+        if(e.button!==0) return;
+        // eerst checken of je het label van de geselecteerde markering vastgrijpt
+        if(this.selectedLabelBox && this.cssW && this.cssH && this.cur){
+          const p=this.norm(e);
+          const px=p.x*this.cssW, py=p.y*this.cssH;
+          const b=this.selectedLabelBox;
+          if(px>=b.x && px<=b.x+b.w && py>=b.y && py<=b.y+b.h){
+            const list=this.cur.annotations[this.page];
+            const a=list && list[this.selectedIndex];
+            if(a){
+              this.draggingLabel=true;
+              this.labelDragStart={ x:e.clientX, y:e.clientY, dx:a.labelDx||0, dy:a.labelDy||0 };
+              document.getElementById('overlay').style.cursor='grabbing';
+              e.preventDefault();
+              return;
+            }
+          }
+        }
+        // dan checken of je het Annotatie-bolletje zelf vastgrijpt (enkel als het al geselecteerd is)
+        if(this.cssW && this.cssH && this.cur && this.selectedIndex!=null){
+          const list=this.cur.annotations[this.page];
+          const a=list && list[this.selectedIndex];
+          if(a && a.type==='number'){
+            const p=this.norm(e);
+            const px=p.x*this.cssW, py=p.y*this.cssH;
+            const cx=a.x*this.cssW, cy=a.y*this.cssH;
+            const r=Math.max(3.3, Math.min(this.cssW,this.cssH)*0.0048);
+            let grabbed = Math.hypot(px-cx,py-cy) <= r+10;
+            if(!grabbed && this.selectedHandleBox){
+              const h=this.selectedHandleBox;
+              grabbed = Math.hypot(px-h.cx,py-h.cy) <= h.r;
+            }
+            if(grabbed){
+              this.draggingSymbol=true;
+              this.symbolDragStart={ x:e.clientX, y:e.clientY, x0:a.x, y0:a.y };
+              document.getElementById('overlay').style.cursor='grabbing';
+              e.preventDefault();
+              return;
+            }
+          }
+        }
+        // geen tekentool actief: slepen scrollt de weergave (pannen), een gewone klik selecteert een markering
+        const wrap=document.querySelector('.canvas-wrap');
+        this.panning=true; this.panMoved=false;
+        this.panStart={x:e.clientX,y:e.clientY,sl:wrap.scrollLeft,st:wrap.scrollTop};
+        document.getElementById('overlay').style.cursor='grabbing';
+        e.preventDefault();
+        return;
+      }
+      e.preventDefault();
+      const p=this.norm(e);
+      if(this.tool==='delete'){
+        const idx=this.hitTest(p);
+        if(idx>=0){
+          if(this.selectedIndex===idx) this.deselect();
+          else if(this.selectedIndex!=null && this.selectedIndex>idx) this.selectedIndex--;
+          this.cur.annotations[this.page].splice(idx,1);
+          this.renumberPage();
+          this.saveMeta();
+          this.drawOverlay();
+          this.renderMarkList();
+          this.render();
+        }
+        return;
+      }
+      if(this.tool==='number'){
+        // eenmalig klikken volstaat: direct een genummerd bolletje plaatsen
+        if(!this.cur.annotations[this.page]) this.cur.annotations[this.page]=[];
+        const list = this.cur.annotations[this.page];
+        const n = list.filter(x=>x.type==='number').length + 1;
+        list.push({ type:'number', x:p.x, y:p.y, n, note:'', checklist:[], color:this.color });
+        this.saveMeta();
+        this.tool = null; this.syncToolButtons(); // tool schakelt zichzelf uit na het plaatsen, zodat je niet per ongeluk nog een bolletje zet
+        this.drawOverlay();
+        this.renderMarkList();
+        this.render();
+        this.selectAnnotation(list.length-1);
+        return;
+      }
+      this.drawing=true;
+      if(this.tool==='free'){ this.freePts=[p]; this.preview={type:'free',pts:this.freePts.slice(),color:this.color,checklist:[],note:''}; }
+      else { this.start=p; this.preview=null; }
+    }
+    move(e){
+      if(this.draggingLabel){
+        const list=this.cur && this.cur.annotations[this.page];
+        const a=list && list[this.selectedIndex];
+        if(a){
+          const dxPx=e.clientX-this.labelDragStart.x, dyPx=e.clientY-this.labelDragStart.y;
+          a.labelDx = this.labelDragStart.dx + dxPx/this.cssW;
+          a.labelDy = this.labelDragStart.dy + dyPx/this.cssH;
+          this.drawOverlay();
+        }
+        return;
+      }
+      if(this.draggingSymbol){
+        const list=this.cur && this.cur.annotations[this.page];
+        const a=list && list[this.selectedIndex];
+        if(a){
+          const dxPx=e.clientX-this.symbolDragStart.x, dyPx=e.clientY-this.symbolDragStart.y;
+          a.x = this.symbolDragStart.x0 + dxPx/this.cssW;
+          a.y = this.symbolDragStart.y0 + dyPx/this.cssH;
+          this.drawOverlay();
+        }
+        return;
+      }
+      if(this.panning){
+        const dx=e.clientX-this.panStart.x, dy=e.clientY-this.panStart.y;
+        if(Math.abs(dx)>4 || Math.abs(dy)>4) this.panMoved=true;
+        const wrap=document.querySelector('.canvas-wrap');
+        wrap.scrollLeft = this.panStart.sl - dx;
+        wrap.scrollTop = this.panStart.st - dy;
+        return;
+      }
+      if(!this.drawing){
+        // buiten pannen/tekenen/slepen om: cursor tonen als je boven het versleepbare label of bolletje zweeft
+        if(!this.tool && this.cur && this.cssW && this.cssH){
+          const p=this.norm(e);
+          const px=p.x*this.cssW, py=p.y*this.cssH;
+          let over=false;
+          if(this.selectedLabelBox){
+            const b=this.selectedLabelBox;
+            over = px>=b.x && px<=b.x+b.w && py>=b.y && py<=b.y+b.h;
+          }
+          if(!over && this.selectedIndex!=null){
+            const list=this.cur.annotations[this.page];
+            const a=list && list[this.selectedIndex];
+            if(a && a.type==='number'){
+              const cx=a.x*this.cssW, cy=a.y*this.cssH;
+              const r=Math.max(3.3, Math.min(this.cssW,this.cssH)*0.0048);
+              over = Math.hypot(px-cx,py-cy) <= r+10;
+              if(!over && this.selectedHandleBox){
+                const h=this.selectedHandleBox;
+                over = Math.hypot(px-h.cx,py-h.cy) <= h.r;
+              }
+            }
+          }
+          document.getElementById('overlay').style.cursor = over ? 'move' : 'grab';
+        }
+        return;
+      }
+      const p=this.norm(e);
+      if(this.tool==='free'){ this.freePts.push(p); this.preview={type:'free',pts:this.freePts.slice(),color:this.color,checklist:[],note:''}; }
+      else { this.preview=this.makeShape(this.start,p); }
+      this.drawOverlay(this.preview);
+    }
+    up(e){
+      if(this.draggingLabel){
+        this.draggingLabel=false;
+        this.saveMeta();
+        document.getElementById('overlay').style.cursor = this.tool ? (this.tool==='delete'?'pointer':'crosshair') : 'grab';
+        return;
+      }
+      if(this.draggingSymbol){
+        this.draggingSymbol=false;
+        this.saveMeta();
+        document.getElementById('overlay').style.cursor = this.tool ? (this.tool==='delete'?'pointer':'crosshair') : 'grab';
+        return;
+      }
+      if(this.panning){
+        const wasClick = !this.panMoved;
+        this.panning=false;
+        document.getElementById('overlay').style.cursor = this.tool ? (this.tool==='delete'?'pointer':'crosshair') : 'grab';
+        if(wasClick && this.cur && e){
+          const p=this.norm(e);
+          const idx=this.hitTest(p);
+          if(idx>=0) this.selectAnnotation(idx); else this.deselect();
+        }
+        return;
+      }
+      if(!this.drawing) return;
+      this.drawing=false;
+      const a=this.preview; this.preview=null;
+      if(a && this.valid(a)){
+        if(!this.cur.annotations[this.page]) this.cur.annotations[this.page]=[];
+        this.cur.annotations[this.page].push(a);
+        this.saveMeta();
+        this.renderMarkList();
+        this.render();
+        this.selectAnnotation(this.cur.annotations[this.page].length-1);
+      }
+      this.drawOverlay();
+    }
+    valid(a){
+      if(a.type==='highlight'||a.type==='circle') return a.w>0.005 && a.h>0.005;
+      if(a.type==='line'||a.type==='arrow') return Math.hypot(a.x2-a.x1,a.y2-a.y1)>0.01;
+      if(a.type==='free') return a.pts && a.pts.length>1;
+      return false;
+    }
+    /* ---------- selectie van een individuele markering (checklist + opmerking) ---------- */
+    selectAnnotation(idx){
+      const list=this.cur && this.cur.annotations[this.page];
+      if(!list || !list[idx]) return;
+      this.selectedIndex=idx;
+      this.renderSelectedPanel();
+      this.drawOverlay();
+    }
+    deselect(){
+      this.selectedIndex=null;
+      const sec=document.getElementById('selectedSec');
+      if(sec) sec.style.display='none';
+      this.drawOverlay();
+    }
+    renderSelectedPanel(){
+      const sec=document.getElementById('selectedSec');
+      const list=this.cur && this.cur.annotations[this.page];
+      const a = list && list[this.selectedIndex];
+      if(!sec) return;
+      if(!a){ sec.style.display='none'; return; }
+      sec.style.display='flex';
+      const TYPE_LABELS={highlight:'Highlight',circle:'Cirkel',arrow:'Pijl',line:'Lijn',free:'Vrije hand',number:'Annotatie'};
+      document.getElementById('selectedType').textContent =
+        (TYPE_LABELS[a.type]||a.type) + (a.type==='number' ? ' ' + a.n : '');
+      const isAnnotation = a.type==='number';
+      document.getElementById('selectedExtras').style.display = isAnnotation ? 'block' : 'none';
+      document.getElementById('selectedExtrasHint').style.display = isAnnotation ? 'none' : 'block';
+      if(!isAnnotation){ return; }
+      if(!a.checklist) a.checklist=[];
+      this.renderChecklistCheckboxList(a);
+      document.getElementById('selectedNote').value = a.note || '';
+      // dropdown sluiten en het knoplabel synchroniseren telkens het paneel (her)opgebouwd wordt
+      document.getElementById('checklistDropdownPanel').style.display='none';
+      document.getElementById('checklistDropdownBtn').classList.remove('open');
+      this.updateChecklistDropdownLabel(a);
+    }
+    renderChecklistCheckboxList(a){
+      const ul=document.getElementById('selectedChecklist');
+      if(!this.checklist.length){
+        ul.innerHTML='<li style="border:none;background:none;justify-content:center;color:var(--ink-soft)">Nog geen foutentypes gedefinieerd.</li>';
+      } else {
+        ul.innerHTML=this.checklist.map(item=>`
+          <li>
+            <label style="display:flex;align-items:center;gap:.5rem;flex:1;cursor:pointer;min-width:0">
+              <input type="checkbox" data-id="${item.id}" ${a.checklist.includes(item.id)?'checked':''}>
+              <span style="min-width:0">${esc(item.label)}</span>
+            </label>
+            <button data-removeitem="${item.id}" title="Dit type uit de checklist verwijderen">×</button>
+          </li>`).join('');
+      }
+    }
+    updateChecklistDropdownLabel(a){
+      const labelEl=document.getElementById('checklistDropdownLabel');
+      if(!labelEl) return;
+      const labels=(a.checklist||[]).map(id=>{
+        const it=this.checklist.find(x=>x.id===id);
+        return it ? it.label : null;
+      }).filter(Boolean);
+      if(!labels.length){
+        labelEl.textContent='Kies foutentype(s)…';
+        labelEl.classList.add('ph');
+      } else {
+        labelEl.textContent=labels.join(', ');
+        labelEl.classList.remove('ph');
+      }
+    }
+    addChecklistItemToSelected(){
+      const input=document.getElementById('selectedChecklistNew');
+      const label=(input.value||'').trim();
+      if(!label) return;
+      const newItem={ id:'c'+Date.now()+Math.floor(Math.random()*1000), label };
+      this.checklist.push(newItem);
+      this.saveChecklist();
+      input.value='';
+      const list=this.cur && this.cur.annotations[this.page];
+      const a=list && list[this.selectedIndex];
+      if(a){
+        if(!a.checklist) a.checklist=[];
+        a.checklist.push(newItem.id); // meteen aanvinken voor deze markering
+        if(!this.cur.hasErrors){
+          this.cur.hasErrors=true;
+          document.getElementById('errCheck').checked=true;
+          document.getElementById('errToggle').classList.add('on');
+          this.updateFileNav();
+        }
+        this.saveMeta();
+        this.renderChecklistCheckboxList(a);
+        this.updateChecklistDropdownLabel(a);
+      }
+      this.renderMarkList();
+      this.render();
+      this.drawOverlay();
+      input.focus();
+    }
+    renderMarkList(){
+      const ul=document.getElementById('markList');
+      if(!ul || !this.cur) return;
+      const list=this.cur.annotations[this.page] || [];
+      if(!list.length){
+        ul.innerHTML='<li style="border:none;background:none;justify-content:center;color:var(--ink-soft)">Geen markeringen op deze pagina.</li>';
+        return;
+      }
+      const TYPE_ABBR={highlight:'▭',circle:'◯',arrow:'↗',line:'／',free:'✎',number:'①'};
+      ul.innerHTML=list.map((a,i)=>{
+        const pal=PALETTE[a.color]||PALETTE.red;
+        const labels=(a.checklist||[]).map(id=>{
+          const it=this.checklist.find(x=>x.id===id);
+          return it ? it.label : null;
+        }).filter(Boolean);
+        const summary = labels.length ? esc(labels.join(', ')) :
+          (a.note ? esc(a.note) : '<span style="color:var(--ink-soft)">geen details</span>');
+        const label = a.type==='number' ? ('#'+a.n) : (TYPE_ABBR[a.type]||'');
+        return `
+          <li data-i="${i}" style="cursor:pointer;align-items:flex-start${this.selectedIndex===i?';background:var(--accent-soft)':''}">
+            <span style="display:flex;gap:.4rem;align-items:flex-start;flex:1;min-width:0">
+              <span style="width:10px;height:10px;border-radius:50%;background:${pal.stroke};flex-shrink:0;margin-top:.3rem"></span>
+              <span style="min-width:0">
+                <b style="font-family:var(--mono);font-size:.72rem">${label}</b>
+                <div style="font-size:.8rem;color:var(--ink-soft);word-break:break-word">${summary}</div>
+              </span>
+            </span>
+            <button data-del="${i}" title="Verwijderen">×</button>
+          </li>`;
+      }).join('');
+    }
+    /* ---------- hit-testing (voor de verwijder-tool) ---------- */
+    segDist(px,py,x1,y1,x2,y2){
+      const dx=x2-x1, dy=y2-y1;
+      const len2=dx*dx+dy*dy;
+      let t = len2 ? ((px-x1)*dx+(py-y1)*dy)/len2 : 0;
+      t = Math.max(0, Math.min(1, t));
+      const cx=x1+t*dx, cy=y1+t*dy;
+      return Math.hypot(px-cx, py-cy);
+    }
+    hitOne(a,px,py,W,H){
+      if(a.type==='highlight'){
+        return px>=a.x*W && px<=(a.x+a.w)*W && py>=a.y*H && py<=(a.y+a.h)*H;
+      }
+      if(a.type==='circle'){
+        const cx=(a.x+a.w/2)*W, cy=(a.y+a.h/2)*H;
+        const rx=Math.max(Math.abs(a.w*W/2),1), ry=Math.max(Math.abs(a.h*H/2),1);
+        const dx=(px-cx)/rx, dy=(py-cy)/ry;
+        return dx*dx+dy*dy<=1.2;
+      }
+      if(a.type==='line'||a.type==='arrow'){
+        return this.segDist(px,py,a.x1*W,a.y1*H,a.x2*W,a.y2*H) < 9;
+      }
+      if(a.type==='free'){
+        if(!a.pts||a.pts.length<2) return false;
+        for(let i=1;i<a.pts.length;i++){
+          if(this.segDist(px,py,a.pts[i-1].x*W,a.pts[i-1].y*H,a.pts[i].x*W,a.pts[i].y*H) < 9) return true;
+        }
+        return false;
+      }
+      if(a.type==='number'){
+        const cx=a.x*W, cy=a.y*H;
+        const r=Math.max(3.3, Math.min(W,H)*0.0048);
+        return Math.hypot(px-cx,py-cy) <= r+10;
+      }
+      return false;
+    }
+    hitTest(p){
+      const W=this.cssW||1, H=this.cssH||1;
+      const px=p.x*W, py=p.y*H;
+      const list=this.cur.annotations[this.page]||[];
+      for(let i=list.length-1;i>=0;i--){
+        if(this.hitOne(list[i],px,py,W,H)) return i;
+      }
+      return -1;
+    }
+    renumberPage(){
+      const list=this.cur.annotations[this.page]||[];
+      let n=1;
+      list.forEach(a=>{ if(a.type==='number') a.n=n++; });
+    }
+    // Telt hoe vaak elk foutentype in dit bestand is aangevinkt (over alle pagina's/markeringen heen)
+    checklistCounts(p){
+      const counts={};
+      Object.values(p.annotations||{}).forEach(list=>{
+        list.forEach(a=>{ (a.checklist||[]).forEach(id=>{ counts[id]=(counts[id]||0)+1; }); });
+      });
+      return counts;
+    }
+    // Een bestand telt als "fout" zodra ofwel de knop aanstaat, ofwel er ergens een
+    // foutentype is aangevinkt op een markering (ook als de knop zelf nog uit staat,
+    // bv. bij bestanden gemarkeerd vóór deze koppeling automatisch werd gemaakt).
+    hasFlaggedError(p){
+      if(p.hasErrors) return true;
+      return Object.values(p.annotations||{}).some(list=>list.some(a=>a.checklist && a.checklist.length));
+    }
+    makeShape(a,b){
+      if(this.tool==='line'||this.tool==='arrow')
+        return { type:this.tool, x1:a.x, y1:a.y, x2:b.x, y2:b.y, color:this.color, checklist:[], note:'' };
+      return { type:this.tool,
+        x:Math.min(a.x,b.x), y:Math.min(a.y,b.y),
+        w:Math.abs(b.x-a.x), h:Math.abs(b.y-a.y), color:this.color, checklist:[], note:'' };
+    }
+    undo(){
+      const arr=this.cur.annotations[this.page];
+      if(arr&&arr.length){
+        arr.pop();
+        if(this.selectedIndex!=null && this.selectedIndex>=arr.length) this.deselect();
+        this.renumberPage();
+        this.saveMeta();
+        this.drawOverlay();
+        this.renderMarkList();
+        this.render();
+      }
+    }
+    clearPage(){
+      this.cur.annotations[this.page]=[];
+      this.deselect();
+      this.saveMeta();
+      this.drawOverlay();
+      this.renderMarkList();
+      this.render();
+    }
+
+    /* ---------- notes / error ---------- */
+    setError(v){
+      this.cur.hasErrors=v;
+      document.getElementById('errToggle').classList.toggle('on', v);
+      this.saveMeta();
+      this.updateFileNav();
+      this.render();
+    }
+    addNote(){
+      const inp=document.getElementById('noteInput');
+      const t=inp.value.trim(); if(!t) return;
+      this.cur.notes.push({ id:Date.now(), text:t });
+      inp.value=''; this.saveMeta(); this.renderNotes();
+    }
+    delNote(id){
+      this.cur.notes=this.cur.notes.filter(n=>n.id!==id);
+      this.saveMeta(); this.renderNotes();
+    }
+    renderNotes(){
+      const ul=document.getElementById('notes'); ul.innerHTML='';
+      this.cur.notes.forEach(n=>{
+        const li=document.createElement('li');
+        const s=document.createElement('span'); s.textContent=n.text;
+        const b=document.createElement('button'); b.textContent='×';
+        b.onclick=()=>this.delNote(n.id);
+        li.append(s,b); ul.appendChild(li);
+      });
+    }
+
+    /* ---------- list ---------- */
+    render(){
+      const $=id=>document.getElementById(id);
+      $('sTotal').textContent=this.pdfs.length;
+      const errs=this.pdfs.filter(p=>this.hasFlaggedError(p));
+      $('sErr').textContent=errs.length;
+      $('listCard').style.display = this.pdfs.length ? 'block':'none';
+
+      const onlyErr=$('filterErr').checked;
+      const q=($('searchFile').value||'').trim().toLowerCase();
+      const annCount=p=>Object.values(p.annotations).reduce((s,a)=>s+a.length,0);
+
+      let rows = onlyErr ? errs : this.pdfs;
+      if(q) rows = rows.filter(p=>p.filename.toLowerCase().includes(q));
+
+      const sortBy = $('sortBy').value;
+      rows = rows.slice().sort((a,b)=>{
+        if(sortBy==='name-desc') return b.filename.localeCompare(a.filename);
+        if(sortBy==='errors-first') return (this.hasFlaggedError(b)?1:0)-(this.hasFlaggedError(a)?1:0) || a.filename.localeCompare(b.filename);
+        if(sortBy==='notes-desc') return b.notes.length-a.notes.length || a.filename.localeCompare(b.filename);
+        if(sortBy==='marks-desc') return annCount(b)-annCount(a) || a.filename.localeCompare(b.filename);
+        return a.filename.localeCompare(b.filename); // name-asc (default)
+      });
+
+      let emptyMsg='';
+      if(rows.length===0) emptyMsg = q ? `Geen bestanden gevonden voor "${esc(q)}".` : 'No files with errors.';
+      $('emptyFilter').textContent = emptyMsg;
+      $('emptyFilter').style.display = emptyMsg ? 'block' : 'none';
+
+      const tb=$('tbody'); tb.innerHTML='';
+      rows.forEach(p=>{
+        const ann=annCount(p);
+        let markedCount=0; const labelSet=new Set();
+        Object.values(p.annotations||{}).forEach(list=>{
+          list.forEach(a=>{
+            if(a.checklist && a.checklist.length){
+              markedCount++;
+              a.checklist.forEach(id=>{
+                const it=this.checklist.find(x=>x.id===id);
+                if(it) labelSet.add(it.label);
+              });
+            }
+          });
+        });
+        const tr=document.createElement('tr');
+        tr.innerHTML=`
+          <td class="fname"></td>
+          <td>${this.hasFlaggedError(p)?'<span class="pill err">● fout</span>':'<span class="pill ok">● ok</span>'}</td>
+          <td class="meta">${p.notes.length}</td>
+          <td class="meta">${ann}</td>
+          <td class="meta" title="${esc([...labelSet].join(', '))}">${markedCount||'–'}</td>
+          <td style="text-align:right"><button class="btn btn-ghost btn-sm">Review</button></td>`;
+        tr.querySelector('.fname').textContent=p.filename;
+        tr.querySelector('button').onclick=()=>this.open(p.id);
+        tb.appendChild(tr);
+      });
+    }
+
+    /* ---------- export ---------- */
+    async exportReport(){
+      if(typeof PDFLib==='undefined'){ alert('The PDF export library could not load. Check your internet connection and reopen the file.'); return; }
+      const scope = document.getElementById('exportScope').value; // 'errors' | 'reviewed' | 'all'
+      const hasContent = p => p.hasErrors || p.notes.length>0 || Object.values(p.annotations).some(a=>a.length>0);
+      let sel;
+      if(scope==='all') sel = this.pdfs.slice();
+      else if(scope==='reviewed') sel = this.pdfs.filter(hasContent);
+      else sel = this.pdfs.filter(p=>this.hasFlaggedError(p));
+      if(!sel.length){ alert('Geen bestanden om te bundelen met deze exportkeuze.'); return; }
+      const { PDFDocument, StandardFonts, rgb } = PDFLib;
+      const load=document.getElementById('loading'); load.classList.add('show');
+      try{
+        const out=await PDFDocument.create();
+        const font=await out.embedFont(StandardFonts.Helvetica);
+        const bold=await out.embedFont(StandardFonts.HelveticaBold);
+        const A4=[595.28,841.89];
+        const ink=rgb(0.09,0.10,0.12), accent=rgb(0.76,0.25,0.05), soft=rgb(0.35,0.38,0.42), red=rgb(0.86,0.14,0.11);
+        const wrap=(text,f,size,maxW)=>{
+          const words=String(text).split(/\s+/); const lines=[]; let line='';
+          words.forEach(w=>{
+            const t=line?line+' '+w:w;
+            if(f.widthOfTextAtSize(t,size)>maxW && line){ lines.push(line); line=w; } else line=t;
+          });
+          if(line) lines.push(line); return lines;
+        };
+
+        // ---- cover page ----
+        let cover=out.addPage(A4); const {width:CW,height:CH}=cover.getSize();
+        cover.drawRectangle({x:0,y:CH-8,width:CW,height:8,color:accent});
+        cover.drawText('PDF Review',{x:56,y:CH-110,size:34,font:bold,color:ink});
+        cover.drawText('Review report — bundled PDF',{x:56,y:CH-140,size:14,font,color:soft});
+        cover.drawText(`${sel.length} file(s) included · ${new Date().toLocaleDateString('en-GB')}`,
+          {x:56,y:CH-172,size:11,font,color:soft});
+        let cy=CH-210;
+        sel.forEach((p,i)=>{
+          if(cy<70){ cover=out.addPage(A4); cy=CH-70; }
+          const ann=Object.values(p.annotations).reduce((s,a)=>s+a.length,0);
+          wrap(`${i+1}.  ${p.filename}`,font,11,CW-112).forEach(ln=>{ cover.drawText(ln,{x:56,y:cy,size:11,font,color:ink}); cy-=16; });
+          cover.drawText(`${this.hasFlaggedError(p)?'FOUT':'OK'} · ${p.notes.length} note(s) · ${ann} marking(s)`,{x:70,y:cy,size:9,font,color:this.hasFlaggedError(p)?red:soft}); cy-=22;
+        });
+
+        // ---- per file: divider page + original pages with markings ----
+        for(const p of sel){
+          let d=out.addPage(A4); const {width:W,height:H}=d.getSize();
+          d.drawRectangle({x:0,y:H-6,width:W,height:6,color:this.hasFlaggedError(p)?red:accent});
+          let y=H-72;
+          wrap(p.filename,bold,18,W-112).forEach(ln=>{ d.drawText(ln,{x:56,y,size:18,font:bold,color:ink}); y-=24; });
+          y-=12; d.drawText('FOUTENOVERZICHT',{x:56,y,size:9,font:bold,color:soft}); y-=20;
+          const counts=this.checklistCounts(p);
+          const found=this.checklist.map(item=>({item,n:counts[item.id]||0})).filter(x=>x.n>0);
+          if(found.length){
+            found.forEach(({item,n})=>{
+              if(y<64){ d=out.addPage(A4); y=H-72; }
+              d.drawText(`•  ${item.label}`,{x:56,y,size:11,font,color:red});
+              d.drawText(`${n}×`,{x:W-90,y,size:11,font:bold,color:red});
+              y-=16;
+            });
+          } else {
+            d.drawText('Geen foutentype aangeduid.',{x:56,y,size:11,font,color:soft}); y-=16;
+          }
+          y-=12; d.drawText('NOTES',{x:56,y,size:9,font:bold,color:soft}); y-=20;
+          if(p.notes.length){
+            p.notes.forEach(n=>{
+              wrap('•  '+n.text,font,11,W-128).forEach((ln,idx)=>{
+                if(y<64){ d=out.addPage(A4); y=H-72; }
+                d.drawText(ln,{x:idx?70:56,y,size:11,font,color:ink}); y-=16;
+              }); y-=4;
+            });
+          } else { d.drawText('No notes added.',{x:56,y,size:11,font,color:soft}); }
+
+          try{
+            const src=await PDFDocument.load(p.bytes.slice(),{ignoreEncryption:true});
+            const copied=await out.copyPages(src,src.getPageIndices());
+            copied.forEach((pg,i)=>{
+              const anns=p.annotations[i+1];
+              if(anns&&anns.length) this.drawOnPdfPage(pg,anns,rgb,bold,font);
+              out.addPage(pg);
+            });
+          }catch(e){
+            const w=out.addPage(A4);
+            w.drawText('The original PDF could not be embedded.',{x:56,y:H-72,size:12,font,color:red});
+            w.drawText(String(e.message||e),{x:56,y:H-92,size:9,font,color:soft});
+          }
+        }
+
+        const bytes=await out.save();
+        const blob=new Blob([bytes],{type:'application/pdf'});
+        const a=document.createElement('a');
+        a.href=URL.createObjectURL(blob);
+        a.download=`pdf-review-bundel-${new Date().toISOString().slice(0,10)}.pdf`;
+        document.body.appendChild(a); a.click(); a.remove();
+        URL.revokeObjectURL(a.href);
+      }catch(err){
+        alert('Export failed: '+(err.message||err));
+      }finally{ load.classList.remove('show'); }
+    }
+
+    // Licht overzichtsrapport: enkel de foutentypes/tellingen per bestand, geen
+    // originele pagina's — snel te maken en te delen, ideaal als samenvatting.
+    async exportSummary(){
+      if(typeof PDFLib==='undefined'){ alert('The PDF export library could not load. Check your internet connection and reopen the file.'); return; }
+      const scope = document.getElementById('exportScope').value; // 'errors' | 'reviewed' | 'all'
+      const hasContent = p => p.hasErrors || p.notes.length>0 || Object.values(p.annotations).some(a=>a.length>0);
+      let sel;
+      if(scope==='all') sel = this.pdfs.slice();
+      else if(scope==='reviewed') sel = this.pdfs.filter(hasContent);
+      else sel = this.pdfs.filter(p=>this.hasFlaggedError(p));
+      if(!sel.length){ alert('Geen bestanden om samen te vatten met deze exportkeuze.'); return; }
+      const { PDFDocument, StandardFonts, rgb } = PDFLib;
+      const load=document.getElementById('loading'); load.classList.add('show');
+      try{
+        const out=await PDFDocument.create();
+        const font=await out.embedFont(StandardFonts.Helvetica);
+        const bold=await out.embedFont(StandardFonts.HelveticaBold);
+        const A4=[595.28,841.89];
+        const ink=rgb(0.09,0.10,0.12), accent=rgb(0.76,0.25,0.05), soft=rgb(0.35,0.38,0.42), red=rgb(0.86,0.14,0.11), line=rgb(0.88,0.87,0.82);
+        const wrap=(text,f,size,maxW)=>{
+          const words=String(text).split(/\s+/); const lines=[]; let ln='';
+          words.forEach(w=>{
+            const t=ln?ln+' '+w:w;
+            if(f.widthOfTextAtSize(t,size)>maxW && ln){ lines.push(ln); ln=w; } else ln=t;
+          });
+          if(ln) lines.push(ln); return lines;
+        };
+
+        let pg=out.addPage(A4); const {width:CW,height:CH}=pg.getSize();
+        const newPage=()=>{ pg=out.addPage(A4); return CH-70; };
+
+        // ---- kop ----
+        pg.drawRectangle({x:0,y:CH-8,width:CW,height:8,color:accent});
+        pg.drawText('PDF Review — Samenvatting',{x:56,y:CH-90,size:26,font:bold,color:ink});
+        pg.drawText(`${sel.length} bestand(en) · ${new Date().toLocaleDateString('nl-BE')}`,
+          {x:56,y:CH-116,size:11,font,color:soft});
+
+        // ---- totalen per foutentype ----
+        let y=CH-160;
+        pg.drawText('TOTALEN PER FOUTENTYPE',{x:56,y,size:9,font:bold,color:soft}); y-=22;
+        if(!this.checklist.length){
+          pg.drawText('Geen foutentypes gedefinieerd.',{x:56,y,size:11,font,color:soft}); y-=20;
+        } else {
+          this.checklist.forEach(item=>{
+            let count=0;
+            sel.forEach(p=>{ const c=this.checklistCounts(p); count+=c[item.id]||0; });
+            if(y<70) y=newPage();
+            pg.drawText(item.label,{x:56,y,size:11,font,color:ink});
+            pg.drawText(String(count),{x:CW-76,y,size:11,font:bold,color:count?red:soft});
+            y-=18;
+          });
+        }
+        y-=16;
+        pg.drawLine({start:{x:56,y},end:{x:CW-56,y},thickness:1,color:accent}); y-=26;
+
+        // ---- per bestand ----
+        pg.drawText('PER BESTAND',{x:56,y,size:9,font:bold,color:soft}); y-=22;
+        sel.forEach(p=>{
+          if(y<110) y=newPage();
+          wrap(p.filename,bold,13,CW-170).forEach(ln=>{
+            if(y<70) y=newPage();
+            pg.drawText(ln,{x:56,y,size:13,font:bold,color:ink}); y-=17;
+          });
+          pg.drawText(this.hasFlaggedError(p)?'FOUT':'OK',{x:CW-90,y:y+17,size:10,font:bold,color:this.hasFlaggedError(p)?red:soft});
+          const counts=this.checklistCounts(p);
+          const found=this.checklist.map(item=>({item,n:counts[item.id]||0})).filter(x=>x.n>0);
+          if(found.length){
+            const text=found.map(({item,n})=>`${item.label} (${n}×)`).join('   ·   ');
+            wrap(text,font,10,CW-128).forEach(ln=>{
+              if(y<64) y=newPage();
+              pg.drawText(ln,{x:70,y,size:10,font,color:red}); y-=14;
+            });
+          } else {
+            pg.drawText('Geen foutentype aangeduid.',{x:70,y,size:10,font,color:soft}); y-=14;
+          }
+          if(p.notes.length){
+            if(y<64) y=newPage();
+            pg.drawText(`${p.notes.length} opmerking(en)`,{x:70,y,size:9,font,color:soft}); y-=14;
+          }
+          y-=8;
+          if(y<60) y=newPage(); else { pg.drawLine({start:{x:56,y:y+6},end:{x:CW-56,y:y+6},thickness:0.5,color:line}); y-=12; }
+        });
+
+        const bytes=await out.save();
+        const blob=new Blob([bytes],{type:'application/pdf'});
+        const a=document.createElement('a');
+        a.href=URL.createObjectURL(blob);
+        a.download=`pdf-review-samenvatting-${new Date().toISOString().slice(0,10)}.pdf`;
+        document.body.appendChild(a); a.click(); a.remove();
+        URL.revokeObjectURL(a.href);
+      }catch(err){
+        alert('Export failed: '+(err.message||err));
+      }finally{ load.classList.remove('show'); }
+    }
+
+    // Rendert de volledige pagina op (bijna) ware grootte — enkel supersampled voor
+    // scherpte, niet uitvergroot — zodat een latere uitsnede er exact zo uitziet
+    // als op de originele PDF.
+    // Rendert enkel het uitsnede-venster zelf rechtstreeks op hoge resolutie —
+    // niet de volledige pagina eerst renderen en dan bijsnijden. Zo blijft het
+    // scherp, ook bij heel grote plannen, zonder een gigantisch canvas nodig te
+    // hebben (het canvas is altijd maar zo groot als de uitsnede zelf).
+    // Een klein kruisje (geen bolletje!) markeert de exacte plek, zonder
+    // verwarring met de ronde symbolen die in het ontwerp zelf al voorkomen.
+    async renderAnnotationSnippet(pdfjsDoc, pageNum, fx, fy, cropPt){
+      const page = await pdfjsDoc.getPage(pageNum);
+      const superScale = 4; // ruim voldoende scherpte; het canvas blijft klein dankzij het venster hieronder
+      const vp = page.getViewport({ scale: superScale });
+      const cropPx = cropPt * superScale;
+      const cx = fx*vp.width, cy = fy*vp.height;
+      let sx = cx-cropPx/2, sy = cy-cropPx/2;
+      sx = Math.max(0, Math.min(sx, Math.max(0, vp.width-cropPx)));
+      sy = Math.max(0, Math.min(sy, Math.max(0, vp.height-cropPx)));
+      const cw = Math.min(cropPx, vp.width), ch = Math.min(cropPx, vp.height);
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.ceil(cw); canvas.height = Math.ceil(ch);
+      const ctx = canvas.getContext('2d');
+      ctx.translate(-sx, -sy); // enkel dit venster van de pagina komt op het (kleine) canvas terecht
+      await page.render({ canvasContext: ctx, viewport: vp }).promise;
+      ctx.setTransform(1,0,0,1,0,0); // transform terugzetten voor het kruisje hieronder
+
+      const mx = cx-sx, my = cy-sy;
+      const armLen=Math.max(9, 5*superScale), gap=Math.max(3, 1.6*superScale);
+      const segs=[
+        [mx-armLen-gap,my, mx-gap,my],   // links
+        [mx+gap,my, mx+armLen+gap,my],   // rechts
+        [mx,my-armLen-gap, mx,my-gap],   // boven
+        [mx,my+gap, mx,my+armLen+gap]    // onder
+      ];
+      ctx.save();
+      ctx.lineCap='round';
+      // witte halo eerst, zodat het kruisje ook op donkere lijnen/kleuren leesbaar blijft
+      ctx.strokeStyle='#fff'; ctx.lineWidth=Math.max(3.5, 1.7*superScale);
+      segs.forEach(([x1,y1,x2,y2])=>{ ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke(); });
+      ctx.strokeStyle='#dc2626'; ctx.lineWidth=Math.max(1.6, 0.8*superScale);
+      segs.forEach(([x1,y1,x2,y2])=>{ ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke(); });
+      ctx.restore();
+      return canvas.toDataURL('image/png');
+    }
+
+    // Overzichtsrapport: per plan (bestand) een uitgesneden stukje van de pagina
+    // rond elke Annotatie-markering, met het foutentype en de opmerking ernaast —
+    // in plaats van de volledige originele pagina's.
+    async exportAnnotationOverview(){
+      if(typeof PDFLib==='undefined'){ alert('The PDF export library could not load. Check your internet connection and reopen the file.'); return; }
+      const scope = document.getElementById('exportScope').value;
+      const hasContent = p => p.hasErrors || p.notes.length>0 || Object.values(p.annotations).some(a=>a.length>0);
+      let sel;
+      if(scope==='all') sel = this.pdfs.slice();
+      else if(scope==='reviewed') sel = this.pdfs.filter(hasContent);
+      else sel = this.pdfs.filter(p=>this.hasFlaggedError(p));
+      if(!sel.length){ alert('Geen bestanden om samen te vatten met deze exportkeuze.'); return; }
+      const { PDFDocument, StandardFonts, rgb } = PDFLib;
+      const load=document.getElementById('loading'); load.classList.add('show');
+      try{
+        const out=await PDFDocument.create();
+        const font=await out.embedFont(StandardFonts.Helvetica);
+        const bold=await out.embedFont(StandardFonts.HelveticaBold);
+        const A4=[595.28,841.89];
+        const ink=rgb(0.09,0.10,0.12), accent=rgb(0.76,0.25,0.05), soft=rgb(0.35,0.38,0.42), red=rgb(0.86,0.14,0.11), line=rgb(0.88,0.87,0.82);
+        const wrap=(text,f,size,maxW)=>{
+          const words=String(text).split(/\s+/); const lines=[]; let ln='';
+          words.forEach(w=>{
+            const t=ln?ln+' '+w:w;
+            if(f.widthOfTextAtSize(t,size)>maxW && ln){ lines.push(ln); ln=w; } else ln=t;
+          });
+          if(ln) lines.push(ln); return lines;
+        };
+
+        let pg=out.addPage(A4); const {width:CW,height:CH}=pg.getSize();
+        const M=40; // paginamarge — kleiner dan voorheen, zodat de uitsnedes nog meer ruimte krijgen
+        const newPage=()=>{ pg=out.addPage(A4); return CH-70; };
+        pg.drawRectangle({x:0,y:CH-8,width:CW,height:8,color:accent});
+        pg.drawText('PDF Review — Annotatie-overzicht',{x:M,y:CH-90,size:24,font:bold,color:ink});
+        pg.drawText(`${sel.length} bestand(en) · ${new Date().toLocaleDateString('nl-BE')}`,{x:M,y:CH-116,size:11,font,color:soft});
+        let y=CH-155;
+
+        const gap=14;
+        const capLineH=10.5;
+        const capLines=3;       // titelregel + max 2 regels foutentype/opmerking
+        const availW=CW-2*M;
+        const cols=2;
+        const CROP_PT=(availW-gap*(cols-1))/cols; // vult de beschikbare breedte volledig, ware grootte
+        const rowH=CROP_PT+8+capLines*capLineH+18;
+
+        const buildCaption=(a)=>{
+          const labels=(a.checklist||[]).map(id=>{ const it=this.checklist.find(x=>x.id===id); return it?it.label:null; }).filter(Boolean);
+          const segments=[];
+          if(labels.length) segments.push({ text:labels.join(', '), color:red });
+          if(a.note) segments.push({ text:a.note, color:soft });
+          const lines=[]; let more=false;
+          segments.forEach(seg=>{
+            const segLines=wrap(seg.text,font,8,CROP_PT);
+            segLines.forEach(ln=>{
+              if(lines.length<capLines-1) lines.push({ text:ln, color:seg.color });
+              else more=true;
+            });
+          });
+          if(more && lines.length){
+            const last=lines[lines.length-1];
+            lines[lines.length-1]={ text: last.text.replace(/[\s.,;:]+$/,'')+' …', color:last.color };
+          }
+          return lines;
+        };
+
+        for(const p of sel){
+          if(y<rowH+40) y=newPage();
+          wrap(p.filename,bold,14,CW-2*M).forEach(ln=>{ pg.drawText(ln,{x:M,y,size:14,font:bold,color:ink}); y-=18; });
+          pg.drawLine({start:{x:M,y:y+4},end:{x:CW-M,y:y+4},thickness:1,color:accent}); y-=16;
+
+          const items=[];
+          Object.entries(p.annotations||{}).forEach(([pageStr,list])=>{
+            list.forEach(a=>{
+              if(a.type==='number' && ((a.checklist&&a.checklist.length) || a.note)) items.push({ page:+pageStr, a });
+            });
+          });
+          items.sort((x,z)=> x.page-z.page || (x.a.n-z.a.n));
+
+          if(!items.length){
+            pg.drawText('Geen geannoteerde punten (met foutentype of opmerking) op dit plan.',{x:M,y,size:10,font,color:soft}); y-=24;
+            continue;
+          }
+
+          let pdfjsDoc;
+          try{ pdfjsDoc = await pdfjsLib.getDocument({ data: p.bytes.slice() }).promise; }
+          catch(e){
+            pg.drawText('Kon dit plan niet openen voor de uitsnedes.',{x:M,y,size:10,font,color:red}); y-=24;
+            continue;
+          }
+          let col=0;
+
+          for(const {page:pageNum, a} of items){
+            if(col===0 && y-rowH<50) y=newPage();
+            let dataUrl;
+            try{ dataUrl=await this.renderAnnotationSnippet(pdfjsDoc, pageNum, a.x, a.y, CROP_PT); }
+            catch(e){ col=(col+1)%cols; if(col===0) y-=rowH; continue; }
+            const cropImg=await out.embedPng(dataUrl);
+            const cropH=CROP_PT*(cropImg.height/cropImg.width);
+
+            const x=M+col*(CROP_PT+gap);
+            const imgY=y-cropH;
+            pg.drawImage(cropImg,{x,y:imgY,width:CROP_PT,height:cropH});
+            pg.drawRectangle({x,y:imgY,width:CROP_PT,height:cropH,borderColor:line,borderWidth:1});
+
+            let ty=imgY-11;
+            pg.drawText(`p.${pageNum} · #${a.n}`,{x,y:ty,size:8,font:bold,color:ink}); ty-=capLineH;
+            buildCaption(a).forEach(ln=>{ pg.drawText(ln.text,{x,y:ty,size:8,font,color:ln.color}); ty-=capLineH; });
+
+            col++;
+            if(col>=cols){ col=0; y-=rowH; }
+          }
+          if(col!==0){ y-=rowH; col=0; }
+          y-=10;
+        }
+
+        const bytes=await out.save();
+        const blob=new Blob([bytes],{type:'application/pdf'});
+        const a=document.createElement('a');
+        a.href=URL.createObjectURL(blob);
+        a.download=`pdf-review-annotaties-${new Date().toISOString().slice(0,10)}.pdf`;
+        document.body.appendChild(a); a.click(); a.remove();
+        URL.revokeObjectURL(a.href);
+      }catch(err){
+        alert('Export failed: '+(err.message||err));
+      }finally{ load.classList.remove('show'); }
+    }
+
+    // Draw markings as vectors onto a pdf-lib page (origin = bottom-left)
+    drawOnPdfPage(page,anns,rgb,boldFont,font){
+      const {width:W,height:H}=page.getSize();
+      const white=rgb(1,1,1);
+      const Y=ny=>H-ny*H;
+      const stroke=key=>{ const c=PDF_PALETTE[key]||PDF_PALETTE.red; return rgb(c[0],c[1],c[2]); };
+      const describe=a=>{
+        const labels=(a.checklist||[]).map(id=>{
+          const it=this.checklist.find(x=>x.id===id);
+          return it ? it.label : null;
+        }).filter(Boolean);
+        const parts=labels.slice();
+        if(a.note) parts.push(a.note);
+        return parts.join(' · ');
+      };
+      const drawLabel=(text,x,y,noteFont)=>{
+        if(!text) return;
+        const size=Math.max(3.3, Math.min(W,H)*0.0055);
+        const f=noteFont||font||boldFont;
+        const truncated = text.length>90 ? text.slice(0,87)+'…' : text;
+        const tw = f.widthOfTextAtSize(truncated,size);
+        const pad=1.5;
+        page.drawRectangle({x:x-pad,y:y-size*0.3-pad,width:tw+pad*2,height:size+pad*2,color:white,opacity:0.85});
+        page.drawText(truncated,{x,y,size,font:f,color:rgb(0.86,0.15,0.15)});
+      };
+      anns.forEach(a=>{
+        const col=stroke(a.color);
+        const ox=(a.labelDx||0)*W, oy=(a.labelDy||0)*H; // canvas-omlaag = pdf-omlaag, dus y-offset aftrekken
+        if(a.type==='highlight'){
+          page.drawRectangle({x:a.x*W,y:H-(a.y+a.h)*H,width:a.w*W,height:a.h*H,
+            color:col,opacity:0.28,borderColor:col,borderWidth:0.6});
+          drawLabel(describe(a), a.x*W+ox, H-(a.y+a.h)*H-11-oy);
+        } else if(a.type==='circle'){
+          page.drawEllipse({x:(a.x+a.w/2)*W,y:H-(a.y+a.h/2)*H,
+            xScale:Math.abs(a.w*W/2),yScale:Math.abs(a.h*H/2),borderColor:col,borderWidth:1.8});
+          drawLabel(describe(a), a.x*W+ox, H-a.y*H+4-oy);
+        } else if(a.type==='line'||a.type==='arrow'){
+          const x1=a.x1*W,y1=Y(a.y1),x2=a.x2*W,y2=Y(a.y2);
+          page.drawLine({start:{x:x1,y:y1},end:{x:x2,y:y2},thickness:1.6,color:col});
+          if(a.type==='arrow'){
+            const ang=Math.atan2(y2-y1,x2-x1);
+            const len=Math.max(8,Math.min(18,Math.hypot(x2-x1,y2-y1)*0.25));
+            page.drawLine({start:{x:x2,y:y2},end:{x:x2-len*Math.cos(ang-Math.PI/7),y:y2-len*Math.sin(ang-Math.PI/7)},thickness:1.6,color:col});
+            page.drawLine({start:{x:x2,y:y2},end:{x:x2-len*Math.cos(ang+Math.PI/7),y:y2-len*Math.sin(ang+Math.PI/7)},thickness:1.6,color:col});
+          }
+          drawLabel(describe(a), Math.min(x1,x2)+ox, Math.max(y1,y2)+6-oy);
+        } else if(a.type==='free'){
+          if(!a.pts||a.pts.length<2) return;
+          for(let i=1;i<a.pts.length;i++)
+            page.drawLine({start:{x:a.pts[i-1].x*W,y:Y(a.pts[i-1].y)},end:{x:a.pts[i].x*W,y:Y(a.pts[i].y)},thickness:1.6,color:col});
+          drawLabel(describe(a), a.pts[0].x*W+ox, Y(a.pts[0].y)+6-oy);
+        } else if(a.type==='number'){
+          const cx=a.x*W, cy=Y(a.y);
+          const r=Math.max(2.7,Math.min(W,H)*0.0042);
+          page.drawEllipse({x:cx,y:cy,xScale:r,yScale:r,color:col,borderColor:white,borderWidth:1});
+          const label=String(a.n);
+          const size=r*1.15;
+          const tw=boldFont ? boldFont.widthOfTextAtSize(label,size) : size*0.6*label.length;
+          page.drawText(label,{x:cx-tw/2,y:cy-size*0.36,size,font:boldFont,color:white});
+          const maxX=W-140;
+          drawLabel(describe(a), Math.min(cx+r+4, maxX)+ox, cy-size*0.35-oy, font);
+        }
+      });
+    }
+  }
+
+  function esc(t){ const d=document.createElement('div'); d.textContent=t; return d.innerHTML; }
+
+  function reportHTML(errCount,total,body){
+    return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">
+<title>PDF Review Report</title><style>
+body{font-family:'IBM Plex Sans',-apple-system,Segoe UI,sans-serif;color:#16191f;background:#fff;margin:0;padding:2.5rem;max-width:880px;margin:auto;line-height:1.55}
+header{border-bottom:3px solid #c2410c;padding-bottom:1rem;margin-bottom:2rem}
+h1{font-size:1.8rem;margin:0}
+.sub{color:#555;font-size:.9rem;margin-top:.3rem}
+section{border:1px solid #e3e2dc;border-radius:8px;padding:1.2rem 1.4rem;margin-bottom:1.6rem;page-break-inside:avoid}
+section h2{font-size:1.15rem;color:#a3231b;word-break:break-all;margin:0 0 .6rem}
+h3{font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;color:#666;margin:1rem 0 .4rem}
+ul{margin:0;padding-left:1.2rem}
+.muted{color:#999;font-size:.88rem}
+.shots{display:flex;flex-direction:column;gap:1rem}
+figure{margin:0;border:1px solid #e3e2dc;border-radius:6px;overflow:hidden}
+figcaption{font-size:.72rem;color:#666;padding:.4rem .6rem;background:#f4f2ec;font-family:monospace}
+img{display:block;width:100%}
+@media print{body{padding:0}}
+</style></head><body>
+<header><h1>PDF Review Report</h1>
+<div class="sub">${errCount} file(s) flagged with errors, out of ${total} reviewed &middot; ${new Date().toLocaleDateString()}</div></header>
+${body}
+</body></html>`;
+  }
+
+  document.addEventListener('DOMContentLoaded', ()=> new Tool());
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,428 @@
+/* ============================================================
+   Design tokens
+   ============================================================ */
+:root {
+  --bg: #f3f5f6;
+  --panel: #ffffff;
+  --ink: #1c2a33;
+  --ink-soft: #5b6b74;
+  --line: #dde3e6;
+  --accent: #0f6e8c;
+  --accent-soft: #e3f1f5;
+  --ok: #1a7f4e;
+  --ok-soft: #e5f5ec;
+  --warn: #a8631a;
+  --warn-soft: #fbf0e1;
+  --err: #b3312c;
+  --err-soft: #fbe8e7;
+  --mono: 'SF Mono', 'Consolas', 'Roboto Mono', monospace;
+  --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+  --radius: 8px;
+  --shadow: 0 1px 2px rgba(20,35,45,.06), 0 4px 14px rgba(20,35,45,.05);
+
+  --ink-2: var(--panel);
+  --ink-3: #f7fafb;
+  --parchment: #1c2a33;
+  --steel: var(--ink-soft);
+  --amber: var(--accent);
+  --accent-2: var(--ok);
+
+  --display: "Fraunces", "Iowan Old Style", Georgia, serif;
+  --body: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --max-w: 1180px;
+}
+
+@media (prefers-color-scheme: light) {
+  /* Site is intentionally dark-themed regardless of system preference */
+}
+
+* { box-sizing: border-box; }
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--body);
+  font-size: 16px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+  position: relative;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.7;
+  background-image:
+    radial-gradient(circle at 18% 20%, rgba(15,110,140,0.06), transparent 38%),
+    radial-gradient(circle at 82% 78%, rgba(26,127,78,0.05), transparent 42%),
+    repeating-radial-gradient(circle at 50% 50%, transparent 0, transparent 72px, rgba(92,105,120,0.03) 73px, transparent 74px);
+}
+
+a { color: inherit; }
+
+/* ============================================================
+   Fixed corner marks (logo top-left, mark bottom-right)
+   ============================================================ */
+.corner-mark {
+  position: fixed;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.corner-mark--tl {
+  top: 1.6rem;
+  left: 1.8rem;
+}
+
+.corner-mark--br {
+  bottom: 1.6rem;
+  right: 1.8rem;
+  color: var(--steel);
+}
+
+.logo-mark {
+  width: 34px;
+  height: 34px;
+  color: var(--ink);
+  flex-shrink: 0;
+  transition: transform 0.6s ease;
+}
+
+.corner-mark--br .logo-mark {
+  width: 26px;
+  height: 26px;
+  color: var(--steel);
+  opacity: 0.8;
+}
+
+.corner-mark:hover .logo-mark {
+  transform: rotate(35deg);
+}
+
+.wordmark {
+  font-family: var(--mono);
+  font-weight: 500;
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.corner-mark--br .wordmark {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--steel);
+}
+
+/* ============================================================
+   Layout shell
+   ============================================================ */
+.shell {
+  position: relative;
+  z-index: 1;
+  max-width: var(--max-w);
+  margin: 0 auto;
+  padding: 8rem 2rem 7rem;
+}
+
+/* ============================================================
+   Hero
+   ============================================================ */
+.hero {
+  margin-bottom: 3rem;
+}
+
+.hero .eyebrow {
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--accent);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.7rem;
+  margin-bottom: 1.2rem;
+}
+
+.hero .eyebrow::before {
+  content: "";
+  width: 18px;
+  height: 1px;
+  background: var(--accent);
+  display: inline-block;
+}
+
+.hero h1 {
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: clamp(2.8rem, 5vw, 4.5rem);
+  line-height: 1.02;
+  margin: 0 0 1rem;
+  letter-spacing: -0.025em;
+}
+
+.hero h1 em {
+  font-style: italic;
+  color: var(--accent);
+}
+
+.hero-copy {
+  font-size: 1rem;
+  color: var(--steel);
+  max-width: 42ch;
+  margin: 0;
+}
+
+/* ============================================================
+   Guide grid — quadrants of a compass
+   ============================================================ */
+.grid-label {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--steel);
+  margin: 0 0 1.2rem;
+  padding-bottom: 0.9rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.guide-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.guide-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 1.6rem;
+  min-height: 250px;
+  padding: 1.3rem 1.3rem 1.2rem;
+  background: var(--ink-2);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  text-decoration: none;
+  color: var(--parchment);
+  overflow: hidden;
+  transition: background 0.35s ease, border-color 0.35s ease, transform 0.35s ease;
+}
+
+.guide-card::before {
+  content: "";
+  position: absolute;
+  top: -40%;
+  right: -20%;
+  width: 60%;
+  height: 180%;
+  background: radial-gradient(circle, rgba(232,163,61,0.12), transparent 60%);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  pointer-events: none;
+}
+
+.guide-card:hover {
+  background: var(--ink-3);
+  border-color: var(--accent);
+  transform: translateY(-2px);
+}
+
+.guide-card:hover::before {
+  opacity: 1;
+}
+
+.guide-card:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.card-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.8rem;
+}
+
+.card-bearing {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.18em;
+  color: var(--accent);
+  text-transform: uppercase;
+}
+
+.card-index {
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  color: var(--steel);
+  opacity: 0.8;
+  letter-spacing: 0.12em;
+}
+
+.card-meta {
+  margin: 0 0 0.35rem;
+  font-family: var(--mono);
+  color: var(--accent-2);
+  font-size: 0.62rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.card-title {
+  font-family: var(--display);
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin: 0 0 0.45rem;
+  letter-spacing: -0.01em;
+}
+
+.card-desc {
+  color: var(--steel);
+  font-size: 0.9rem;
+  max-width: 34ch;
+  margin: 0;
+}
+
+.card-cta {
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent-2);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.card-cta .arrow {
+  transition: transform 0.3s ease;
+}
+
+.guide-card:hover .card-cta .arrow {
+  transform: translateX(4px);
+}
+
+/* ============================================================
+   Footer
+   ============================================================ */
+.site-footer {
+  position: relative;
+  z-index: 1;
+  border-top: 1px solid var(--line);
+  padding: 2.2rem 2rem 6rem;
+  max-width: var(--max-w);
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.05em;
+  color: var(--steel);
+}
+
+/* ============================================================
+   Subpages
+   ============================================================ */
+.page-shell {
+  position: relative;
+  z-index: 1;
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 8.5rem 2rem 7rem;
+}
+
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--steel);
+  text-decoration: none;
+  margin-bottom: 2.6rem;
+  transition: color 0.25s ease;
+}
+
+.back-link:hover { color: var(--amber); }
+
+.page-shell .card-bearing {
+  margin-bottom: 1rem;
+}
+
+.page-shell h1 {
+  font-family: var(--display);
+  font-size: clamp(2.1rem, 5vw, 3.2rem);
+  font-weight: 600;
+  margin: 0 0 1.4rem;
+  letter-spacing: -0.01em;
+}
+
+.page-shell .lede {
+  font-size: 1.08rem;
+  color: var(--steel);
+  max-width: 56ch;
+  margin: 0 0 2.6rem;
+}
+
+.page-shell section {
+  margin-bottom: 2.4rem;
+}
+
+.page-shell h2 {
+  font-family: var(--display);
+  font-size: 1.3rem;
+  font-weight: 600;
+  margin: 0 0 0.8rem;
+}
+
+.page-shell p {
+  color: var(--ink-soft);
+  margin: 0 0 1rem;
+}
+
+.page-shell ul {
+  color: var(--ink-soft);
+  padding-left: 1.2rem;
+}
+
+.page-shell li { margin-bottom: 0.5rem; }
+
+/* ============================================================
+   Responsive
+   ============================================================ */
+@media (max-width: 720px) {
+  .shell { padding: 7rem 1.3rem 5rem; }
+  .guide-grid { grid-template-columns: 1fr; }
+  .corner-mark--tl { top: 1.1rem; left: 1.2rem; }
+  .corner-mark--br { bottom: 1.1rem; right: 1.2rem; }
+  .wordmark { font-size: 0.95rem; }
+  .site-footer { padding: 1.8rem 1.3rem 5rem; }
+  .page-shell { padding: 7rem 1.3rem 5rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; scroll-behavior: auto !important; }
+}

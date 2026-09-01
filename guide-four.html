@@ -1,0 +1,1162 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kabelgroepering — netwerkelementen per kabel</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#EFF2F4; --panel:#FFFFFF; --panel-2:#F7F9FA;
+  --ink:#0F1A1F; --ink-2:#566069; --ink-3:#8A969E;
+  --line:#E2E7EB; --line-strong:#CFD7DC;
+  --accent:#0E8FA3; --accent-ink:#075A67; --accent-wash:#E0F3F5;
+  --radius:10px; --mono:"IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --sans:"IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --shadow:0 1px 2px rgba(16,26,31,.05), 0 8px 24px rgba(16,26,31,.05);
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{
+  font-family:var(--sans); color:var(--ink); background:
+    radial-gradient(120% 90% at 100% -10%, rgba(14,143,163,.07), transparent 60%),
+    var(--paper);
+  line-height:1.45; -webkit-font-smoothing:antialiased; padding:28px 20px 64px;
+}
+.wrap{max-width:980px; margin:0 auto}
+
+.head{display:flex; align-items:flex-start; gap:14px; margin-bottom:18px}
+.glyph{flex:0 0 auto; width:38px; height:38px; margin-top:2px}
+.glyph svg{display:block; width:38px; height:38px}
+.head h1{font-size:20px; line-height:1.2; font-weight:700; letter-spacing:-.01em; margin:0 0 3px}
+.head p{margin:0; color:var(--ink-2); font-size:13.5px; max-width:64ch}
+.head .kbd{font-family:var(--mono); font-size:12px; color:var(--accent-ink); background:var(--accent-wash); padding:1px 6px; border-radius:5px}
+
+.summary{display:flex; flex-wrap:wrap; gap:10px; margin:16px 0}
+.stat{background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:11px 14px; min-width:108px; box-shadow:var(--shadow)}
+.stat .n{font-family:var(--mono); font-size:23px; font-weight:600; letter-spacing:-.02em; line-height:1}
+.stat .l{font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-3); margin-top:5px}
+.stat.warn .n{color:#9A3B12}
+
+.legend{display:flex; flex-wrap:wrap; gap:7px; margin:14px 0 6px}
+.chip{display:inline-flex; align-items:center; gap:7px; border:1px solid var(--line-strong);
+  background:var(--panel); border-radius:999px; padding:5px 11px 5px 9px; font-size:12.5px; cursor:pointer;
+  user-select:none; color:var(--ink); font-family:var(--sans)}
+.chip .dot{width:10px; height:10px; border-radius:3px; background:var(--c); flex:0 0 auto}
+.chip .ct{font-family:var(--mono); font-size:11.5px; color:var(--ink-2)}
+.chip[aria-pressed="false"]{opacity:.4; background:var(--panel-2)}
+.chip[aria-pressed="false"] .dot{background:var(--ink-3)}
+
+.load-bar{display:flex; align-items:center; gap:10px; flex-wrap:wrap; background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:14px 16px; margin-bottom:14px; box-shadow:var(--shadow)}
+.load-primary{font-size:13.5px; padding:9px 16px; display:inline-flex; align-items:center; gap:7px; background:var(--accent); color:#fff; border-color:var(--accent); font-weight:600}
+.load-primary:hover{background:var(--accent-ink); border-color:var(--accent-ink)}
+.load-secondary{font-size:13.5px; padding:9px 16px; display:inline-flex; align-items:center; gap:7px}
+.load-hint{font-size:12.5px; color:var(--ink-3); margin-left:4px}
+.controls{display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin:0; position:sticky; top:0; z-index:20; background:var(--paper); padding:10px 0 8px; box-shadow:0 1px 0 var(--line)}
+.search{position:relative; flex:1 1 230px; min-width:190px}
+.search input{width:100%; font-family:var(--sans); font-size:13.5px; color:var(--ink);
+  border:1px solid var(--line-strong); border-radius:8px; padding:9px 12px 9px 32px; background:var(--panel)}
+.search svg{position:absolute; left:10px; top:50%; transform:translateY(-50%); color:var(--ink-3)}
+select, .btn{font-family:var(--sans); font-size:13px; color:var(--ink); border:1px solid var(--line-strong);
+  background:var(--panel); border-radius:8px; padding:8px 12px; cursor:pointer}
+.btn:hover, select:hover{border-color:var(--accent)}
+.btn.ghost{background:var(--panel-2)}
+.spacer{flex:1 1 auto}
+input[type=file]{display:none}
+
+.list{margin-top:14px; display:flex; flex-direction:column; gap:9px}
+.group{background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); overflow:hidden; box-shadow:var(--shadow)}
+.group.has-err{border-color:#E57373; border-left:3px solid #C0392B; background:#FFFAFA}
+.ghead{display:grid; grid-template-columns:18px 1fr auto; align-items:center; gap:12px;
+  width:100%; text-align:left; border:0; background:transparent; cursor:pointer; padding:13px 15px; font:inherit; color:inherit}
+.ghead:hover{background:var(--panel-2)}
+.caret{color:var(--ink-3); transition:transform .15s ease; font-size:11px; line-height:1}
+.group.open .caret{transform:rotate(90deg)}
+.gmain{min-width:0}
+.gtitle{font-family:var(--mono); font-size:14.5px; font-weight:600; letter-spacing:-.01em; display:flex; align-items:center; gap:8px; flex-wrap:wrap}
+.gtitle .total, .gtitle .ref{font-family:var(--mono); font-size:11px; color:var(--ink-2); background:var(--panel-2);
+  border:1px solid var(--line); padding:1px 7px; border-radius:6px; font-weight:500}
+.gtitle .ref{color:var(--accent-ink); background:var(--accent-wash); border-color:transparent}
+.ktype{font-family:var(--mono); font-size:11px; padding:1px 7px; border-radius:6px; font-weight:600; border:1px solid transparent; white-space:nowrap}
+.ktype-192{background:#EDE9FB; color:#4A2E9E; border-color:#C8BEF5}
+.ktype-96{background:#FEF3E2; color:#92540A; border-color:#F5D9A0}
+.bar{display:flex; height:6px; border-radius:4px; overflow:hidden; margin-top:9px; background:var(--line)}
+.bar span{display:block; height:100%}
+.gcounts{display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end; max-width:340px}
+.badge{display:inline-flex; align-items:center; gap:5px; font-size:11.5px; padding:2px 8px; border-radius:6px;
+  background:var(--bg); color:var(--fg); font-weight:500; white-space:nowrap}
+.badge .d{width:7px; height:7px; border-radius:2px; background:var(--c)}
+.badge b{font-family:var(--mono); font-weight:600}
+
+.gbody{display:none; border-top:1px solid var(--line); padding:4px 0 8px}
+.group.open .gbody{display:block}
+
+/* nested cable blocks (hoofdkabel view) */
+.cableblock{margin:8px 15px; border:1px solid var(--line); border-left:3px solid var(--cb,var(--line-strong));
+  border-radius:8px; background:var(--panel-2); overflow:hidden}
+.cableblock.hoofd{--cb:var(--accent)}
+.cableblock.sub{--cb:#C9D2D7}
+.cbhead{display:flex; align-items:center; gap:9px; flex-wrap:wrap; padding:9px 12px}
+.cbhead .cid{font-family:var(--mono); font-size:13px; font-weight:600}
+.tag{font-size:10px; text-transform:uppercase; letter-spacing:.05em; padding:2px 7px; border-radius:5px; font-weight:600}
+.tag.h{background:var(--accent-wash); color:var(--accent-ink)}
+.tag.s{background:#E9EDF0; color:#5A6770}
+.cbhead .cnt{font-family:var(--mono); font-size:11px; color:var(--ink-2)}
+.cbbar{height:5px; flex:1 1 60px; min-width:50px; max-width:150px; display:flex; border-radius:3px; overflow:hidden; background:var(--line)}
+.cbbar span{display:block; height:100%}
+.cableblock .typeblock{padding:5px 12px 2px}
+.cableblock .rows{padding-bottom:6px}
+
+.typeblock{padding:9px 15px 3px}
+.typeblock h4{margin:0 0 7px; font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-2);
+  display:flex; align-items:center; gap:7px}
+.typeblock h4 .d{width:9px; height:9px; border-radius:3px; background:var(--c)}
+.typeblock h4 .raw{font-family:var(--mono); font-size:10.5px; color:var(--ink-3); text-transform:none; letter-spacing:0}
+.rows{display:flex; flex-direction:column}
+.row{display:grid; grid-template-columns:1fr auto auto; align-items:center; gap:12px;
+  padding:6px 4px; border-bottom:1px dashed var(--line)}
+.row:last-child{border-bottom:0}
+.row .lbl{font-family:var(--mono); font-size:13px; color:var(--ink); overflow-wrap:anywhere; display:flex; align-items:center; gap:8px; flex-wrap:wrap}
+.row .hops{display:none}
+.row .xy{display:none}
+
+.empty{padding:22px 16px; text-align:center; color:var(--ink-2); font-size:13.5px}
+.note{margin-top:22px; color:var(--ink-3); font-size:12px; line-height:1.6}
+.note code{font-family:var(--mono); font-size:11.5px; color:var(--ink-2)}
+#err{display:none; margin:10px 0; padding:11px 14px; border-radius:8px; background:#FBE7DA; color:#8F3A14; font-size:13px}
+
+.valid{margin:12px 0; border-radius:10px; padding:12px 15px; font-size:13.5px; display:flex; gap:11px; align-items:flex-start; box-shadow:var(--shadow)}
+.valid .ic{flex:0 0 auto; margin-top:1px}
+.valid.err{background:#FBE7DA; color:#7E2E12; border:1px solid #F0C3AC}
+.valid.warn2{background:#FBF1DA; color:#7A5712; border:1px solid #ECD9A8}
+.valid.ok{background:#E6EEE9; color:#33604B; border:1px solid #C8DDD0; font-size:12.5px; padding:9px 14px; box-shadow:none}
+.valid b{font-weight:600}
+.duplist{margin:8px 0 0; padding:0; list-style:none; display:flex; flex-direction:column; gap:5px}
+.duplist li{line-height:1.4}
+.duplist .lab{font-family:var(--mono); font-weight:600}
+.duplist .meta2{opacity:.85; font-family:var(--mono); font-size:11.5px}
+.row .dup{font-family:var(--mono); font-size:10px; text-transform:uppercase; letter-spacing:.04em; padding:1px 6px; border-radius:5px; background:#F4C9B4; color:#8F3A14; font-weight:600}
+.row .refbad{font-family:var(--mono); font-size:10px; letter-spacing:.04em; padding:1px 6px; border-radius:5px; background:#F7E4B0; color:#7A5712; font-weight:600}
+.refwarn{font-size:10px; text-transform:uppercase; letter-spacing:.04em; padding:2px 7px; border-radius:5px; background:#FBF1DA; color:#7A5712; border:1px solid #ECD9A8; font-weight:600; white-space:nowrap}
+
+.cabtabs{display:flex; gap:4px; padding:8px 14px 0; border-bottom:1px solid var(--line); margin-bottom:2px}
+.cabtab{font-family:var(--sans); font-size:12.5px; color:var(--ink-2); background:transparent; border:0; border-bottom:2px solid transparent; padding:6px 10px; cursor:pointer; margin-bottom:-1px}
+.cabtab:hover{color:var(--ink)}
+.cabtab.is-active{color:var(--accent-ink); border-bottom-color:var(--accent); font-weight:600}
+.cabpane[hidden]{display:none}
+.numwrap{padding:11px 14px 4px}
+.ladeblock{margin-bottom:13px}
+.ladehdr{display:flex; align-items:center; gap:9px; flex-wrap:wrap; margin-bottom:8px}
+.ladehdr .lname{font-family:var(--mono); font-weight:600; font-size:13px}
+.ladehdr .nf{font-family:var(--mono); font-size:11.5px; background:var(--accent-wash); color:var(--accent-ink); padding:2px 9px; border-radius:6px; font-weight:600}
+.ladehdr .meta3{color:var(--ink-3); font-size:11.5px; font-family:var(--mono)}
+.odf-toggle{display:inline-flex; align-items:center; gap:6px; margin-top:7px;
+  font-family:var(--mono); font-size:11.5px; color:var(--accent-ink); background:transparent;
+  border:0; padding:0; cursor:pointer; opacity:.85}
+.odf-toggle:hover{opacity:1}
+.odf-toggle svg{transition:transform .15s}
+.odf-toggle.open svg{transform:rotate(180deg)}
+.odf-table{margin-top:9px; border:1px solid var(--line); border-radius:9px; overflow:hidden}
+.odf-row{display:grid; grid-template-columns:1fr 56px 100px 72px 76px;
+  align-items:center; padding:6px 12px; gap:8px; border-bottom:1px solid var(--line)}
+.odf-row:last-child{border-bottom:0}
+.odf-hdr{background:var(--panel-2); font-size:10.5px; font-weight:600;
+  color:var(--ink-3); text-transform:uppercase; letter-spacing:.05em; padding:5px 12px}
+.odf-row:not(.odf-hdr):nth-child(even){background:var(--panel-2)}
+.odf-row:not(.odf-hdr):hover{background:var(--accent-wash)}
+.odf-err{background:#FEF7F7 !important}
+.odf-err:hover{background:#FDECEA !important}
+.odf-c1{font-family:var(--mono); font-size:12px; font-weight:600; color:var(--ink)}
+.odf-c1 span:first-child{color:var(--ink-3); font-weight:400}
+.odf-c1 .odf-sub{font-size:10px; font-weight:400; color:var(--ink-3); margin-left:4px}
+.odf-badge{font-family:var(--mono); font-size:12px; font-weight:700;
+  color:var(--accent-ink); background:var(--accent-wash); border-radius:5px; padding:1px 7px; display:inline-block}
+.odf-c3{display:flex; flex-wrap:wrap; gap:3px}
+.odf-chip{font-family:var(--mono); font-size:11px; padding:1px 6px; border-radius:4px; background:#E8EDF0; color:var(--ink)}
+.odf-chip-bad{background:#FDECEA; color:#C0392B; font-weight:700}
+.odf-fid{font-family:var(--mono); font-size:11px; color:var(--ink-3)}
+.odf-dot{width:8px; height:8px; border-radius:50%; display:inline-block; flex-shrink:0}
+.odf-dot.ok{background:#43A35C}
+.odf-dot.bad{background:#C0392B}
+.odf-dot.absent{background:var(--ink-3); opacity:.4}
+.odf-c5{display:flex; align-items:center; gap:5px; font-family:var(--mono); font-size:11px}
+.odf-c5.ok{color:#2D7A42}
+.odf-c5.bad{color:#C0392B; font-weight:600}
+.odf-c5.absent{color:var(--ink-3)}
+.numgrid{display:flex; flex-wrap:wrap; gap:5px}
+.num{font-family:var(--mono); font-size:11px; min-width:28px; text-align:center; padding:3px 5px; border-radius:6px; border:1px solid var(--line-strong); background:var(--panel); color:var(--ink-2)}
+.num.used{background:#E8EDF0; color:var(--ink); border-color:transparent}
+.num.free{border:1.5px dashed #43A35C; color:#2D7A42; background:#F0FAF3; font-weight:600}
+.num.dup{background:#FDECEA; color:#C0392B; border-color:#E57373; font-weight:700}
+
+.t-evpu{--c:#11899B;--bg:#DCEFF2;--fg:#0A6573}
+.t-evpf{--c:#D9743A;--bg:#FBE7DA;--fg:#8F3A14}
+.t-evpi{--c:#8A5CE0;--bg:#ECE3FB;--fg:#5326A3}
+.t-pop{--c:#C0395A;--bg:#FAE0E7;--fg:#8E2440}
+.t-virtueel{--c:#9FAEB8;--bg:#EDF1F3;--fg:#56636C}
+.t-greenfield{--c:#5E9C7E;--bg:#E4EEE8;--fg:#33604B}
+.t-overig{--c:#A7B1B8;--bg:#ECEFF1;--fg:#56636C}
+
+:focus-visible{outline:2px solid var(--accent); outline-offset:2px; border-radius:4px}
+
+/* copy button */
+.copybtn{font-family:var(--mono); font-size:10px; padding:0 5px; margin-left:6px; border:1px solid var(--line-strong); border-radius:4px; background:var(--panel); color:var(--ink-3); cursor:pointer; line-height:1.6; vertical-align:middle; opacity:0; transition:opacity .1s}
+.row:hover .copybtn{opacity:1}
+.copybtn:hover{color:var(--accent-ink); border-color:var(--accent)}
+
+/* validation collapse toggle */
+.val-collapse{display:flex; align-items:center; gap:5px; font-family:var(--sans); font-size:12px; color:var(--ink-3); background:transparent; border:0; padding:0 0 4px; cursor:pointer; margin-bottom:6px}
+.val-collapse:hover{color:var(--ink-2)}
+.val-collapse svg{flex-shrink:0}
+
+/* filter errors button active state */
+#filterErrors[style*="accent-wash"]{color:var(--accent-ink); border-color:var(--accent)}
+
+@media (max-width:560px){
+  body{padding:18px 13px 48px}
+  .gcounts{max-width:none}
+  .row{grid-template-columns:1fr auto}
+  .row .xy{display:none}
+  .ghead{grid-template-columns:16px 1fr; gap:8px}
+  .gcounts{grid-column:1 / -1; justify-content:flex-start; margin-top:4px}
+  .cableblock{margin:8px 10px}
+}
+@media (prefers-reduced-motion: reduce){ *{transition:none !important} }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="head">
+    <span class="glyph" aria-hidden="true">
+      <svg viewBox="0 0 38 38" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="1" y="1" width="36" height="36" rx="9" fill="#E0F3F5"/>
+        <circle cx="10" cy="19" r="3.1" fill="#0E8FA3"/>
+        <circle cx="28" cy="10" r="2.4" fill="#D9743A"/>
+        <circle cx="29" cy="19" r="2.4" fill="#8A5CE0"/>
+        <circle cx="28" cy="28" r="2.4" fill="#11899B"/>
+        <path d="M12.7 18.2 25.8 10.8M13 19h13M12.8 19.9 25.9 27.4" stroke="#0E8FA3" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+    </span>
+    <div>
+      <h1>Kabelgroepering</h1>
+      <p>Elke kabel valt onder zijn <span class="kbd">hoofdkabel</span> — de code die op <span class="kbd">00</span> eindigt; de <span class="kbd">01–04</span>-codes zijn de subkabels. Elk netwerkelement hangt via <span class="kbd">Parent_ID → ID</span> aan een kabel. Klik een hoofdkabel open om de subkabels en hun elementen te zien.</p>
+    </div>
+  </header>
+
+  <div id="err"></div>
+
+  <div class="load-bar">
+    <button class="btn load-primary" id="loadBtn">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      Laad object relations
+    </button>
+    <button class="btn load-secondary" id="loadPopBtn" title="Laad POP COMPACT xlsx om ODF-nummers bij te werken">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      Laad POP COMPACT
+    </button>
+    <span class="load-hint" id="loadHint">Laad een object relations CSV om te starten, of werk verder met de ingebouwde dataset.</span>
+  </div>
+
+  <div id="validation"></div>
+
+  <section class="summary" id="summary"></section>
+
+  <div class="legend" id="legend"></div>
+
+  <div class="controls">
+    <label class="search">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+      <input id="search" type="text" placeholder="Zoek op kabel of element…" autocomplete="off">
+    </label>
+    <select id="level" title="Groepeerniveau">
+      <option value="main">Per hoofdkabel</option>
+      <option value="flat">Per losse kabel</option>
+    </select>
+    <select id="sort" title="Sorteervolgorde">
+      <option value="id">Sorteer op code</option>
+      <option value="count">Sorteer op aantal elementen</option>
+    </select>
+    <button class="btn ghost" id="toggleAll">Alles openklappen</button>
+    <button class="btn ghost" id="filterErrors" style="display:none">⚠ Alleen fouten</button>
+    <span class="spacer"></span>
+    <button class="btn ghost" id="refreshBtn" title="Reset naar beginstand">↺ Opnieuw starten</button>
+    <span class="spacer2"></span>
+    <button class="btn" id="exportBtn">Download gegroepeerd</button>
+    <input type="file" id="file" accept=".csv,text/csv">
+    <input type="file" id="popFile" accept=".xlsx,.xls">
+  </div>
+
+  <div class="list" id="list"></div>
+
+  <p class="note" id="note"></p>
+
+</div>
+
+<script>
+const RAW_CSV = "Netwerk Element;X;Y;ID (GUI);Parent_ID (GUI);ObjectType;ProjectId;Manhole_ID;Label;GVK\nGENT-08-EVP29-08;108429,59;199564,32;45fe2b78-9d74-40a5-bc93-e51c1e8756e5;1a7f4553-77e8-4d20-8fef-a4fb3736626f;EVP-U;4166340;e33cb35c-c853-4fe6-97a2-17811d14ce72;GENT-HH40801;GENT-K4081303\nGENT-08-EVP21-02;108259,31;198991,94;64584f38-c633-4178-9029-b6e1c91e7db8;9e391bc8-e58f-41cc-8a89-0e6bb5c05863;EVP-U;4166340;36131b41-3769-44f4-af6a-df11ac139e47;GENT-HH40802;GENT-K4080900\nGENT-08-EVP34-00;108281,68;199847,81;2f094309-1450-4c37-82af-fc6053ce7dfa;079b9bb0-7e81-49f1-a9c0-9487b76418d9;EVP-U;4166340;f85e12f0-3caa-4a32-9d21-70bd4b8b461c;GENT-HH40803;GENT-K4081500\nGENT-08-EVP17-01;107857,35;198645,44;9d7d55db-099f-4862-b8ae-1d7bb7bebfb5;99027bc2-9a8e-4a1a-b180-f24b4419c477;EVP-U;4166340;7d46695c-9710-4e39-8fb8-5ead5cf4b6c2;GENT-HH40804;GENT-K4080701\nGENT-08-EVP40-00;107984,42;198787,71;4fd6a31c-11b8-4211-921b-031aac78a0dd;079b9bb0-7e81-49f1-a9c0-9487b76418d9;EVP-U;4166340;141dc7b8-88e8-4290-a9e4-b0b7df214383;GENT-HH40805;GENT-K4081700\nGENT-08-EVP43-00;109031,32;198733,87;49a20b5e-9a79-4e67-ac54-da3c47f57c97;079b9bb0-7e81-49f1-a9c0-9487b76418d9;EVP-U;4166340;d357ab2a-da54-4c8d-9908-dbae71177c3e;GENT-HH40806;GENT-K4082300\nGENT-08-EVP07-00;107310,53;198986,96;0694c8ef-8397-49e9-b8e9-44cff040272f;079b9bb0-7e81-49f1-a9c0-9487b76418d9;EVP-U;4166340;df9a6ec7-353b-4c8c-9d35-427fbd6dd75e;GENT-HH40807;GENT-K4080200\nGENT-08-EVP32-06;107811,55;199663,6;7b38b873-c87f-4c2a-8493-82872d3e1303;95bce95d-8701-41c0-9221-7a8431cccd9f;EVP-U;4166340;02368c1e-4598-4abf-b68d-37cb04bc126f;GENT-HH40808;GENT-K4081400\nGENT-08-EVP11-06;107839,59;199846,74;b21e2750-e2a5-4be6-bccf-8057690cb4e0;7d99da6f-bfcc-4dd3-9841-8c5e1a06884c;EVP-U;4166340;70ac5d1b-166c-4e85-9acc-abf3d2ae256f;GENT-HH40809;GENT-K4080400\nGENT-08-EVP34-01;108574,65;199903,89;b183303b-6691-4b01-a59c-9880a3c66b91;2f094309-1450-4c37-82af-fc6053ce7dfa;EVP-U;4166340;bdc7a45c-50e5-4879-a555-227ba1f7d746;GENT-HH40810;GENT-K4081500\nGENT-08-EVP35-00;108129,06;199831,5;1ec8d1e5-2c55-4e36-800c-fa59d27b71b4;93e3bd21-4044-4635-a56b-f1e1f3aa1853;EVP-U;4166340;1deeb5c6-872b-4377-a7af-efa83f141f9e;GENT-HH40811;GENT-K4081600\nGENT-08-EVP23-01;108858,71;198730,83;7857db6d-540f-44ed-a5e1-2af3fd126576;e92f22ea-3f41-4d6a-8d0b-6a63fc4fa397;EVP-U;4166340;fdded701-16dc-4c06-a52f-587ff556426a;GENT-HH40812;GENT-K4081000\nGENT-08-EVP39-00;107469,89;198700,64;1425e5c9-1ccd-4039-8ad2-9d42dd1ba6bb;079b9bb0-7e81-49f1-a9c0-9487b76418d9;EVP-U;4166340;3de02342-e512-4fa8-af78-8cc13d5dfa01;GENT-HH40813;GENT-K4082000\nGENT-08-EVP15-00;107881,36;198451,47;c12ed369-db4e-4b22-bd0e-eb0af5be084d;9465367a-5bd8-456f-b791-3c189ea0be80;EVP-U;4166340;0748b38e-6210-4b1b-8517-64c180fe15aa;GENT-HH40814;GENT-K4080600\nGENT-08-EVP41-00;108535,98;198584,99;ba48a738-1612-41e3-bb06-2fb9bb751c80;079b9bb0-7e81-49f1-a9c0-9487b76418d9;EVP-U;4166340;b55ceb97-5e07-4a2b-9201-b1f306c73462;GENT-HH40815;GENT-K4082100\nGENT-08-EVP23-00;108756,21;198607,02;4f42b90e-5446-4786-886b-0f84b8095ed5;079b9bb0-7e81-49f1-a9c0-9487b76418d9;EVP-U;4166340;5e961c2f-e0ba-49f8-8ee7-8500bbd2da80;GENT-HH40816;GENT-K4081000\nGENT-08-EVP42-00;108511,12;198896,48;150c7ae1-5c50-45ac-b255-e6a17db64802;079b9bb0-7e81-49f1-a9c0-9487b76418d9;EVP-U;4166340;e6ce7062-b495-4a08-a7a4-3c046ed7db47;GENT-HH40817;GENT-K4082200\nGENT-08-EVP11-00;107528,17;199540,86;b8f90674-4fb4-4379-8962-80ef4a139d0f;079b9bb0-7e81-49f1-a9c0-9487b76418d9;EVP-U;4166340;5fe83a14-8e79-4773-b622-aba667b7dfa8;GENT-HH40818;GENT-K4080400\nGENT-08-EVP37-00;107572,11;198429,49;b48d57d2-d3c4-44ba-836e-164a33722de3;079b9bb0-7e81-49f1-a9c0-9487b76418d9;EVP-U;4166340;39b8f256-8153-4485-b316-a2e041dd16f8;GENT-HH40819;GENT-K4081800\nGENT-08-EVP17-05;108129,08;198738,06;0e44f703-d2d4-4ee5-8dca-ccd50b1711dd;99027bc2-9a8e-4a1a-b180-f24b4419c477;EVP-U;4166340;e7a4b145-db33-4e51-a865-51dc58c15c10;GENT-HH40820;GENT-K4080700\nGENT-08-EVP29-10;108616,97;199670,92;c8b2ace4-26da-43ee-a347-84433596af86;c269d72d-8e93-4842-97df-8d6ccd148495;EVP-U;4166340;46d74b59-2c99-4c36-9d54-d62b23daa7f1;GENT-HH40821;GENT-K4081300\nGENT-08-EVP32-00;108112,91;199291,34;9535a0c4-1e1a-4503-a24a-012c77181170;079b9bb0-7e81-49f1-a9c0-9487b76418d9;EVP-U;4166340;b9964fbd-e41e-436d-b4bb-c7858d89922f;GENT-HH40822;GENT-K4081400\nGENT-08-EVP19-01;108151,91;198958,29;521dfb37-68dd-4591-bf57-289717b9b78e;2906cbe7-157f-4540-b062-196f1cf75362;EVP-U;4166340;a57d5e2a-68e8-4519-be07-026ba6ebd28b;GENT-HH40823;GENT-K4080800\nGENT-08-EVP05-00;107585,76;198865;09240d5e-6f0b-4720-9146-2e98eaa5f008;079b9bb0-7e81-49f1-a9c0-9487b76418d9;EVP-U;4166340;74361357-77d0-4c3d-b943-caa07f0306ff;GENT-HH40824;GENT-K4080100\nGENT-08-EVP40-01;107919,92;198903,7;23bf1c58-7853-442f-a36f-b6d170fb2b98;4fd6a31c-11b8-4211-921b-031aac78a0dd;EVP-U;4166340;e6394e02-09b0-40be-abe4-fd5d8acd9f9f;GENT-HH40825;GENT-K4081700\nGENT-08-EVP34-03;108596,63;199822,54;e74f56a3-d265-4818-98fe-12a707911484;92398c52-2d75-4872-aae0-b9fc58bb8596;EVP-U;4166340;b83b831a-d9ef-4031-9a3c-407c2523577d;GENT-HH40826;GENT-K4081500\nGENT-08-EVP42-01;108963,51;199133,01;f3b67ca6-ef1f-4049-99d6-6138ae5dd78a;150c7ae1-5c50-45ac-b255-e6a17db64802;EVP-U;4166340;93f7015c-bab3-426e-9b76-de5383ed0caa;GENT-HH40827;GENT-K4082200\nGENT-08-EVP34-02;108847,87;199941,53;92398c52-2d75-4872-aae0-b9fc58bb8596;b183303b-6691-4b01-a59c-9880a3c66b91;EVP-U;4166340;063a75e4-92a3-4e30-b8a8-14a10aad198d;GENT-HH40828;GENT-K4081500\nGENT-08-EVP38-09;107677,05;198536,58;9cc4116e-6bc4-404e-9547-138171d280a6;01652bec-e801-489c-abe7-88699e759e99;EVP-U;4166340;d5a1cc9a-3d3f-4ad4-9137-8240c5b34026;GENT-HH40829;GENT-K4081900\nGENT-08-EVP11-01;107486,31;199465,79;638bad12-95ec-4a78-8575-28dd7cae1523;b8f90674-4fb4-4379-8962-80ef4a139d0f;EVP-U;4166340;fd1f4989-8246-4e77-958b-4b1181213dbf;GENT-HH40830;GENT-K4080401\nGENT-08-EVP13-02;107757,3;199104,9;510c307d-a996-41a6-96d7-fe0e2e569775;c002f869-71b2-4cae-bd78-d5f6df7b6b6e;EVP-U;4166340;04f7c066-0ea4-4bde-81e0-95bd3933b473;GENT-HH40831;GENT-K4080500\nGENT-08-EVP27-00;108477,77;199092,25;372c046a-cb43-40b9-8485-52f8625d6871;079b9bb0-7e81-49f1-a9c0-9487b76418d9;EVP-U;4166340;9597856e-1869-4ccf-be98-8502731f6233;GENT-HH40832;GENT-K4081200\nGENT-08-EVP13-01;107862,22;199167,06;c002f869-71b2-4cae-bd78-d5f6df7b6b6e;d4939ac3-adda-476c-8550-24061069af3f;EVP-U;4166340;599ea390-50e4-418f-a685-88aee471c857;GENT-HH40833;\nGENT-08-EVP25-01;108301,37;198100,38;22f3d46c-5334-4c74-b00b-8755cbf46208;a597bb91-53f4-4535-8ad8-62c6f01867be;EVP-U;4166340;7fc5a468-2a3b-4d90-b48f-dbe3e70c0b61;GENT-HH40834;GENT-K4081100\nGENT-08-EVP15-02;107761,78;198581,66;a1cca6e3-71c3-4313-81c0-ffc9849c5b0b;c12ed369-db4e-4b22-bd0e-eb0af5be084d;EVP-U;4166340;81b5e207-7c3d-4366-a40a-7a10d5cc3f5a;GENT-HH40835;GENT-K4080600\nGENT-08-EVP05-08;107557,33;198826,99;4c42c7c1-4bb4-41df-b5cf-25e0f7519788;92095bb5-bfc3-416c-b20a-ce4cc89fc5d6;EVP-U;4166340;f7b7fed3-9ac5-44f3-a865-cd4960beed04;GENT-HH40836;GENT-K4080100\nGENT-08-EVP09-16;107412,67;199086,29;648d31ef-96b7-40c1-92b1-bd18d49eedb1;1d80517a-82c0-4f3a-96b7-c163767a3371;EVP-U;4166340;a38a5796-bdc5-4a61-b257-c082801b23db;GENT-HH40837;GENT-K4080300\nGENT-08-EVP11-05;107585,86;199730,17;7d99da6f-bfcc-4dd3-9841-8c5e1a06884c;b8f90674-4fb4-4379-8962-80ef4a139d0f;EVP-U;4166340;e264b266-003f-4731-ad72-13ec0557b6f6;GENT-HH40838;GENT-K4080400\nGENT-08-EVP29-05;108449,97;199529,8;1a7f4553-77e8-4d20-8fef-a4fb3736626f;85daceef-77a4-4331-be63-ec6e8c1e8491;EVP-U;4166340;1ba3a871-65c7-4718-b2a3-deb8af7dd3c8;GENT-HH40839;GENT-K4081302\nGENT-08-EVP29-09;108647,79;199711,02;c269d72d-8e93-4842-97df-8d6ccd148495;85daceef-77a4-4331-be63-ec6e8c1e8491;EVP-U;4166340;23bb26b1-b702-4569-9886-f14e0e04f421;GENT-HH40840;GENT-K4081300\nGENT-08-EVP13-00;107629,01;199163,92;d4939ac3-adda-476c-8550-24061069af3f;079b9bb0-7e81-49f1-a9c0-9487b76418d9;EVP-U;4166340;bd116000-41c1-44ee-8f2b-b50a07c4cadf;GENT-HH40841;GENT-K4080500\nGENT-08-EVP27-01;108409,83;199149,22;b963edef-1e81-469d-9da3-b907d5b7a026;372c046a-cb43-40b9-8485-52f8625d6871;EVP-U;4166340;ea8e1911-a7b1-47bc-9e4e-ad84c1e377ea;GENT-HH40842;GENT-K4081200\nGENT-08-EVP32-04;107945,87;199583,18;95bce95d-8701-41c0-9221-7a8431cccd9f;9535a0c4-1e1a-4503-a24a-012c77181170;EVP-U;4166340;0d4c0e4b-48eb-44f8-ad3b-8eb26afd0474;GENT-HH40843;GENT-K4081400\nGENT-08-EVP09-01;107429,65;199185,5;1d80517a-82c0-4f3a-96b7-c163767a3371;34adea54-a122-4ad5-bdcb-407203df6c63;EVP-U;4166340;5b80ec49-a827-4914-94f9-be5848af3163;GENT-HH40844;GENT-K4080300\nGENT-08-EVP25-02;108052,05;198353,98;ed4036a1-4483-49ea-845c-d93df39e9a69;22f3d46c-5334-4c74-b00b-8755cbf46208;EVP-U;4166340;4ee3077e-bd3e-4cdb-afe8-94b5a951c7a1;GENT-HH40845;GENT-K4081100\nGENT-08-EVP25-00;108570,09;198371,85;a597bb91-53f4-4535-8ad8-62c6f01867be;079b9bb0-7e81-49f1-a9c0-9487b76418d9;EVP-U;4166340;92bdbcb6-97fc-42a6-ab4c-b6908ad7fa0d;GENT-HH40846;GENT-K4081100\nGENT-08-EVP19-00;108398,75;198811,83;2906cbe7-157f-4540-b062-196f1cf75362;079b9bb0-7e81-49f1-a9c0-9487b76418d9;EVP-U;4166340;68bd8073-a864-46f5-80e4-09425a82308b;GENT-HH40847;GENT-K4080800\nGENT-08-EVP38-01;107627,66;198689,78;d310ab2a-9b8d-4226-8552-6235e89356e9;8436afff-349c-412a-a0f2-f957f54af919;EVP-U;4166340;3d90660c-4a9a-465a-bcf3-9fa90fbb790c;GENT-HH40849;GENT-K4081901\nGENT-08-EVP29-00;108470,44;199473,34;85daceef-77a4-4331-be63-ec6e8c1e8491;079b9bb0-7e81-49f1-a9c0-9487b76418d9;EVP-U;4166340;9a308ecd-b842-4a7f-8296-9302bd29f7b8;GENT-HH40850;GENT-K4081300\nGENT-08-EVP09-00;107561,62;199119,59;34adea54-a122-4ad5-bdcb-407203df6c63;079b9bb0-7e81-49f1-a9c0-9487b76418d9;EVP-U;4166340;d141ccda-8bfd-45c0-b164-0b969290af38;GENT-HH40851;GENT-K4080300\nGENT-08-EVP39-01;107402,35;198638,63;db899786-1323-4f62-8fd0-2d1d6d446131;1425e5c9-1ccd-4039-8ad2-9d42dd1ba6bb;EVP-U;4166340;869f7aec-474e-4c06-99e5-37b3b35f3868;GENT-HH40853;GENT-K4082000\nGENT-08-EVP38-00;107682,73;198652,15;8436afff-349c-412a-a0f2-f957f54af919;079b9bb0-7e81-49f1-a9c0-9487b76418d9;EVP-U;4166340;bf1bef4a-a0b3-44c3-a037-c385dd74f16e;GENT-HH40854;GENT-K4081900\nGENT-08-EVP17-00;108181,84;198667,9;99027bc2-9a8e-4a1a-b180-f24b4419c477;079b9bb0-7e81-49f1-a9c0-9487b76418d9;EVP-U;4166340;1982b872-3b64-4784-a8d0-31fa436c5a3f;GENT-HH40855;GENT-K4080700\nGENT-08-EVP05-32;107631,24;198944,55;82ed2bc4-bd0b-4d1f-9841-3c37e02fad6c;81f04eaa-75c5-45e5-a328-d44f253283a9;EVP-U;4166340;e049cbe8-7d12-4980-98d4-59e67265c8dd;GENT-HH40856;GENT-K4080102\nGENT-08-EVP38-05;107665,1;198507,05;01652bec-e801-489c-abe7-88699e759e99;8436afff-349c-412a-a0f2-f957f54af919;EVP-U;4166340;d74c503c-9060-4b02-ace0-7d4b5259b628;GENT-HH40857;GENT-K4081900\nGENT-08-EVP32-07;107755,84;199493,61;e31988cf-b856-4fc4-a04a-be2891bec661;7b38b873-c87f-4c2a-8493-82872d3e1303;EVP-U;4166340;280933bc-f36a-419d-b4ff-50acb455b98b;GENT-HH40858;GENT-K4081400\nGENT-08-EVP21-00;107964,96;198993,08;9e391bc8-e58f-41cc-8a89-0e6bb5c05863;5409f583-b106-433f-9036-0160c0a260e1;EVP-U;4166340;4934df2b-2eec-4564-91bf-e64c254e46c7;GENT-HH40859;GENT-K4080900\nGENT-08-EVP27-02;108250,02;199358,63;86019df2-5212-48ea-8d41-61caecb10cef;b963edef-1e81-469d-9da3-b907d5b7a026;EVP-U;4166340;c572a4b7-4b0f-4bee-a460-a5f4bceca6a5;GENT-HH40860;GENT-K4081200\nGENT-08-EVP35-01;108251,3;199653,67;04a2e290-b15a-4972-b83d-76b7f2db58b3;1ec8d1e5-2c55-4e36-800c-fa59d27b71b4;EVP-U;4166340;e9b75ee8-c594-4c5e-a66c-e0fa264d4eaa;GENT-HH40861;GENT-K4081600\nGENT-08-EVP09-14;107432,76;199221,82;df7e823e-158c-4483-8ef4-92b8f88fc499;937d4f35-91cf-4e90-a8f6-859b403d81ef;EVP-U;4166340;0a0c453a-d7c4-49c2-9e74-b298eeb1df92;GENT-HH40865;\nGENT-08-EVP13-03;107694,33;199070,61;3dadc330-be94-4fd4-81d6-81df55e8c4f5;510c307d-a996-41a6-96d7-fe0e2e569775;EVP-U;4166340;ef621f81-d742-4911-a01b-96f616eb8960;GENT-HH40866;GENT-K4080500\nGENT-08-EVP07-06;107483,87;198955,74;3fc808e8-4bf6-4d32-90ff-07b04fe21310;38aa0fe0-6178-4136-bf19-f71b59f51909;EVP-U;4166340;66e5dafc-e6a9-43aa-b7a3-22f10e303910;GENT-HH40868;GENT-K4080204\nGENT-08-EVP32-01;107941,85;199205,46;d35e6922-5431-423f-a62a-7fca9e9571ab;9535a0c4-1e1a-4503-a24a-012c77181170;EVP-U;4166340;e5aa56a8-5890-461d-98f9-c74b32c80ca3;GENT-HH40869;GENT-K4081401\nGENT-08-EVP07-01;107430;199027,06;38aa0fe0-6178-4136-bf19-f71b59f51909;0694c8ef-8397-49e9-b8e9-44cff040272f;EVP-U;4166340;5af970d0-9775-4c53-9b3e-352a0192d39f;GENT-HH40870;GENT-K4080202\nGENT-08-EVP09-02;107360,98;199251,22;0655a16c-c2c1-46c6-8d9f-63a3a0a81b1d;1d80517a-82c0-4f3a-96b7-c163767a3371;EVP-U;4166340;d1feefe3-4bfe-4b59-b4c0-16d0ef4e5864;GENT-HH40872;GENT-K4080301\nGENT-08-EVP05-27;107603,78;198896,53;81f04eaa-75c5-45e5-a328-d44f253283a9;09240d5e-6f0b-4720-9146-2e98eaa5f008;EVP-U;4166340;60c1bea2-e642-47a9-b5c8-8b94f65d8895;GENT-HH40873;GENT-K4080101\nGENT-08-EVP39-05;107355,11;198586,68;eebcc594-ea8d-4a74-82e2-f0b69f359022;db899786-1323-4f62-8fd0-2d1d6d446131;EVP-U;4166340;ce3998a1-b3cc-46f9-81d7-ca2c3bf05390;GENT-HH40879;GENT-K4082001\nGENT-08-EVP07-12;107419,18;199079,66;be66b082-c8de-4271-8e08-0dbd3263e2d1;0694c8ef-8397-49e9-b8e9-44cff040272f;EVP-U;4166340;9149d1f4-dce3-40c7-8540-e17aa9380b44;GENT-HH40880;GENT-K4080201\nGENT-08-EVP05-01;107573,83;198860,61;92095bb5-bfc3-416c-b20a-ce4cc89fc5d6;09240d5e-6f0b-4720-9146-2e98eaa5f008;EVP-U;4166340;38539e29-c9a5-4b8e-b241-c203bfac1afa;GENT-HH40881;GENT-K4080100\nGENT-08-EVP05-18;107477,63;198725,81;4fbde69c-b641-4996-94dd-8c7b1afcfb36;4c42c7c1-4bb4-41df-b5cf-25e0f7519788;EVP-U;4166340;3adf7450-1ec2-4f52-a6d3-45400e92e07c;GENT-HH40882;GENT-K4080103\nGENT-08-EVP44-00;107481,55;199386,55;e2021f57-bec4-4830-8ba2-6e434dfdc9fb;392033cd-e812-42cf-b068-c54e0f83d8b4;Virtual - Greenfield;4166340;ee00b2ec-9e23-4435-affb-96a712b0f071;GENT-HH40877;GENT-K4080600\nGENT-08-EVP25-09;108565;198380,63;26de5efa-b877-4ec9-bb4a-d27675216c59;a597bb91-53f4-4535-8ad8-62c6f01867be;EVP-U;4166340;b3970085-775a-4512-b7a0-e960ea330ae7;GENT-HH40883;GENT-K4081101\nGENT-08-EVP25-07;108309,06;198090,66;d23edccc-1089-4f1a-a521-bbda4bb1095f;22f3d46c-5334-4c74-b00b-8755cbf46208;EVP-U;4166340;96203af3-f782-4400-b23c-828e00eaa9c3;GENT-HH40884;GENT-K4081102\nGENT-08-EVP27-11;108236,61;199352,05;f7192653-66bf-4feb-b77e-c377216f1766;86019df2-5212-48ea-8d41-61caecb10cef;EVP-U;4166340;898676af-1591-4dc0-85a3-184b5174780a;GENT-HH40885;GENT-K4081201\nGENT-08-EVP29-17;107763,49;198849,7;9d98aee7-9fc2-4745-b8fc-2bc68d5c07f0;23bf1c58-7853-442f-a36f-b6d170fb2b98;EVP-U;4166340;e6c12462-7677-4448-849f-5767b57aabe2;GENT-HH40886;GENT-K4081700\nGENT-08-EVP29-15;108373,83;199419,98;e6af8daf-8bb6-4f0a-b324-cd2e7cfa56ad;85daceef-77a4-4331-be63-ec6e8c1e8491;EVP-U;4166340;740abb05-d172-49db-a8b9-bd301b12da2a;GENT-HH40887;GENT-K4081301\nGENT-08-EVP35-03;108340,35;199643,72;93e3bd21-4044-4635-a56b-f1e1f3aa1853;079b9bb0-7e81-49f1-a9c0-9487b76418d9;EVP-U;4166340;c01b43ef-9f67-45c4-b367-e99000968bcc;GENT-HH40888;GENT-K4081600\nGENT-08-EVP23-08;108854,66;198719,63;e92f22ea-3f41-4d6a-8d0b-6a63fc4fa397;4f42b90e-5446-4786-886b-0f84b8095ed5;EVP-U;4166340;cdefc2c9-2bb8-44d8-863d-50d183c5f300;GENT-HH40890;GENT-K4081000\nGENT-08-EVP15-10;107865,88;198451,11;9465367a-5bd8-456f-b791-3c189ea0be80;079b9bb0-7e81-49f1-a9c0-9487b76418d9;EVP-U;4166340;9a860f6b-a465-4e8b-8de1-57219f0a9351;GENT-HH40891;\nGENT-08-EVP15-11;107878,08;198451,95;32488029-b2f6-4663-b235-73d61412afbc;c12ed369-db4e-4b22-bd0e-eb0af5be084d;EVP-U;4166340;8593a6bc-dac5-4b67-9e2d-71a01a3bceec;GENT-HH40892;GENT-K4080602\nGENT-08-EVP42-02;;;cb99512b-d1b7-47eb-bd60-831e92ec194e;ba48a738-1612-41e3-bb06-2fb9bb751c80;EVP-U;4166340;273ea533-8f8b-41e1-b2a2-b1cc8a41ffd7;GENT-HH40893;GENT-K4082100\nGENT-08-EVP16-01;;;392033cd-e812-42cf-b068-c54e0f83d8b4;a1cca6e3-71c3-4313-81c0-ffc9849c5b0b;EVP-U;4166340;7dcac639-ac51-4edf-bfdb-e729dffbbfd1;GENT-HH40894;GENT-K4080600\nGENT-08-EVP21-17;107965,77;198995,57;5409f583-b106-433f-9036-0160c0a260e1;079b9bb0-7e81-49f1-a9c0-9487b76418d9;EVP-U;4166340;2878e0ad-0344-4a88-8192-177af1c94db0;GENT-HH40895;GENT-K4080900\nGENT-08-EVP08-06;107276,53;198573,81;cc9ca970-1680-4c51-aa8f-308bb0093b1b;42614a39-6b8f-4e69-a558-b28bddb1ed38;EVP-U;4166340;484a6e3d-70d0-41a9-820d-bb894e844736;GENT-HH40848;GENT-K4080200\nGENT-08-EVP08-05;107302,3;198981,65;42614a39-6b8f-4e69-a558-b28bddb1ed38;0694c8ef-8397-49e9-b8e9-44cff040272f;EVP-U;4166340;b5e6ecfc-be84-49cf-a80d-65b4d4d5ddb7;GENT-HH40889;GENT-K4080200\nGENT-08-EVP09-17;107305,76;199013,6;dd3d7150-8cb4-4f85-89be-d85d3cb6d8f4;648d31ef-96b7-40c1-92b1-bd18d49eedb1;Virtueel;4166340;;;\nGENT-08-EVP41-04;108522,91;198650,15;27f79e84-83b5-4541-adc5-755445741503;ba48a738-1612-41e3-bb06-2fb9bb751c80;Virtueel;4166340;;;\nGENT-08-EVP27-07;108560,71;199412,31;6904e295-6a44-4b72-b918-122a8fcf9a9b;86019df2-5212-48ea-8d41-61caecb10cef;Virtueel;4166340;;;\nGENT-08-EVP05-19;107570,14;198857,07;c3fd3b1b-128a-4679-83d1-ff92b5acbb8b;92095bb5-bfc3-416c-b20a-ce4cc89fc5d6;Virtueel;4166340;;;\nGENT-08-EVP21-16;107864,11;199082,32;0302192a-0284-4ca7-856e-151197445819;5409f583-b106-433f-9036-0160c0a260e1;Virtueel;4166340;;;\nGENT-08-EVP11-13;107654,23;199504,84;b8628e0f-45ff-4be2-b4e0-cf338fd799c2;b8f90674-4fb4-4379-8962-80ef4a139d0f;Virtueel;4166340;;;\nGENT-08-EVP17-03;107739,13;198727,56;0e1b8f6a-419f-4fd6-9621-b949010f848a;9d7d55db-099f-4862-b8ae-1d7bb7bebfb5;Virtueel;4166340;;;\nGENT-08-EVP19-02;108050,49;198959,62;81ebd92c-12f7-411a-8fd0-ecc655d1be0b;521dfb37-68dd-4591-bf57-289717b9b78e;EVP-I;4166340;;;\nGENT-08-EVP21-06;107822,58;198988,54;27949269-8724-4f72-ad1e-0087b81329eb;9e391bc8-e58f-41cc-8a89-0e6bb5c05863;Virtueel;4166340;;;\nGENT-08-EVP13-27;107567,62;199179,71;76b9ed5c-6c0e-4b31-80fb-1d2ebc2882e0;d4939ac3-adda-476c-8550-24061069af3f;EVP-I;4166340;;;\nGENT-08-EVP23-05;108828,72;198719,27;ac0b8103-7132-4956-91c8-d28042dc70d2;e92f22ea-3f41-4d6a-8d0b-6a63fc4fa397;Virtueel;4166340;;;\nGENT-08-EVP37-01;107620,48;198446,03;b09d36dd-9ab1-4813-8169-14c206ffb7d5;b48d57d2-d3c4-44ba-836e-164a33722de3;Virtueel;4166340;;;\nGENT-08-EVP38-14;107681,69;198575,41;1f46134b-9264-47fd-a1c0-f32f7bc02c90;1bd2a9cc-e9d8-4738-bdf1-814fec05b7fc;Virtueel;4166340;;;\nGENT-08-EVP09-23;107411,74;199354,39;105ca410-5ea1-4900-a5be-38db9a6c4f88;1d80517a-82c0-4f3a-96b7-c163767a3371;Virtueel;4166340;;;\nGENT-08-EVP21-07;107805,83;198991,91;7cd351bd-a575-4074-a24e-28d2faac1b4d;9e391bc8-e58f-41cc-8a89-0e6bb5c05863;Virtueel;4166340;;;\nGENT-08-EVP13-16;107808,65;199176,56;661b3cc7-1f0d-4e77-a8ac-77768c356267;c002f869-71b2-4cae-bd78-d5f6df7b6b6e;Virtueel;4166340;;;\nGENT-08-EVP13-18;107787,84;199166,11;250109d9-b7b6-4905-b3a1-46ce428a5fb1;c002f869-71b2-4cae-bd78-d5f6df7b6b6e;Virtueel;4166340;;;\nGENT-08-EVP13-15;107832,05;199147,59;9d131dfc-76f0-4d73-9d57-000c9787b3c1;510c307d-a996-41a6-96d7-fe0e2e569775;Virtueel;4166340;;;\nGENT-08-EVP13-26;107665,57;199185,29;a18a11f3-6369-46e1-8816-e37363788ced;d4939ac3-adda-476c-8550-24061069af3f;Virtueel;4166340;;;\nGENT-08-EVP09-24;107561,25;199116,05;ca9efced-feac-48a2-af4c-39fe71eb5675;34adea54-a122-4ad5-bdcb-407203df6c63;Virtueel;4166340;;;\nGENT-08-EVP41-03;108511,8;198853,52;d54e7957-89b3-4e72-ad4f-ecedddf6eb0d;ba48a738-1612-41e3-bb06-2fb9bb751c80;Virtueel;4166340;;;\nGENT-08-EVP11-12;107592,48;199515,31;3f83521e-c3fe-46e1-af41-46a159ae7821;b8f90674-4fb4-4379-8962-80ef4a139d0f;Virtueel;4166340;;;\nGENT-08-EVP13-25;107694,39;199170,08;9bb6a6ed-a889-411a-9bcc-e1bc12f514ed;d4939ac3-adda-476c-8550-24061069af3f;Virtueel;4166340;;;\nGENT-08-EVP38-19;107621,82;198711,75;40b2829c-b9da-4bf7-a22a-67bad8ee1f94;8436afff-349c-412a-a0f2-f957f54af919;Virtueel;4166340;;;\nGENT-08-EVP13-21;107837,13;199208,28;45e71de9-a779-4d74-83c1-cb67cc1ecd77;c002f869-71b2-4cae-bd78-d5f6df7b6b6e;Virtueel;4166340;;;\nGENT-08-EVP25-05;108335,63;198108,06;fd11d443-e8ad-4152-85ee-bc38da71630a;d23edccc-1089-4f1a-a521-bbda4bb1095f;Virtueel;4166340;;;\nGENT-08-EVP05-39;107638,48;198838,16;922781c7-eda1-4599-b9c4-d466d28507ce;09240d5e-6f0b-4720-9146-2e98eaa5f008;Virtueel;4166340;;;\nGENT-08-EVP29-13;108525,45;199515,25;7158e915-90ae-4721-b657-ed7f8f52664a;85daceef-77a4-4331-be63-ec6e8c1e8491;Virtueel;4166340;;;\nGENT-08-EVP37-03;107586,92;198395,09;1d6c416a-ad49-4223-a4e4-59a8337c1132;b48d57d2-d3c4-44ba-836e-164a33722de3;Virtueel;4166340;;;\nGENT-08-EVP27-09;108477,52;199432,2;90035b63-40eb-46c0-8f9a-7ddd8386fc88;86019df2-5212-48ea-8d41-61caecb10cef;Virtueel;4166340;;;\nGENT-08-EVP17-04;107779,65;198735,99;82b08977-ebb4-480a-b114-b1f49583c8fe;9d7d55db-099f-4862-b8ae-1d7bb7bebfb5;Virtueel;4166340;;;\nGENT-08-EVP25-06;108462,55;198245,03;b387081c-1b96-48b4-b556-8c301dede7ef;a597bb91-53f4-4535-8ad8-62c6f01867be;Virtueel;4166340;;;\nGENT-08-EVP17-07;108124,36;198637,27;bdbd4d11-4f8b-4cdd-b60b-b45493b0e8b7;0e44f703-d2d4-4ee5-8dca-ccd50b1711dd;Virtueel;4166340;;;\nGENT-08-EVP09-25;107577,31;199094,58;7bebe8a2-456b-4f1c-8432-02e86c4f51cf;34adea54-a122-4ad5-bdcb-407203df6c63;Virtueel;4166340;;;\nGENT-08-EVP05-30;107622,4;198924,82;9a32814c-591c-4f43-b951-572abe9564a5;effabff7-69de-4654-b19d-909c80f62f90;Virtueel;4166340;;;\nGENT-08-EVP13-09;107734,13;199092,77;5996ee26-d556-42da-a3af-711145139c40;3dadc330-be94-4fd4-81d6-81df55e8c4f5;EVP-I;4166340;;;\nGENT-08-EVP05-22;107632,22;198971,02;41ad90e1-4e64-4b01-9c89-90192722f5aa;92095bb5-bfc3-416c-b20a-ce4cc89fc5d6;Virtueel;4166340;;;\nGENT-08-EVP21-04;108304,42;198989,68;1c6d1f08-33ed-46d0-9f83-8a6acb3fc556;64584f38-c633-4178-9029-b6e1c91e7db8;Virtueel;4166340;;;\nGENT-08-EVP15-08;107650,96;198386,65;367636a6-9aa9-4dfc-beb6-dc2361fb8e2d;9465367a-5bd8-456f-b791-3c189ea0be80;Virtueel;4166340;;;\nGENT-08-EVP07-21;107374,66;198874,88;1afae030-764b-4e6d-aa5f-53454217ed0e;42614a39-6b8f-4e69-a558-b28bddb1ed38;Virtueel;4166340;;;\nGENT-08-EVP17-10;108000,69;198939,04;5fe52199-b444-4585-b65c-e1c723ef7fc9;0e44f703-d2d4-4ee5-8dca-ccd50b1711dd;Virtueel;4166340;;;\nGENT-08-EVP39-11;107457,63;198688,61;69969696-6a1d-4fdb-ba43-3bc080787a7d;1425e5c9-1ccd-4039-8ad2-9d42dd1ba6bb;Virtueel;4166340;;;\nGENT-08-EVP17-02;107744,55;198723,07;51ad37f5-b3c2-42b1-a43c-defb2aad4436;9d7d55db-099f-4862-b8ae-1d7bb7bebfb5;Virtueel;4166340;;;\nGENT-08-EVP29-12;108366,31;199438,99;89e19f21-a63e-4ab5-9f83-7a838a4b9ffb;85daceef-77a4-4331-be63-ec6e8c1e8491;Virtueel;4166340;;;\nGENT-08-EVP13-07;107671,29;199026,9;1529ecba-299a-42f0-a7d0-340c68df3e79;d1cd0618-a643-4ba5-8873-936097e841cf;EVP-I;4166340;;;\nGENT-08-EVP21-05;107846,11;198988,77;50c8fead-9f6b-4b04-b178-ec344dd2a062;9e391bc8-e58f-41cc-8a89-0e6bb5c05863;Virtueel;4166340;;;\nGENT-08-EVP41-02;108635,62;198658,4;670f9ee2-1cb4-4ea5-98df-fdf96e27089c;ba48a738-1612-41e3-bb06-2fb9bb751c80;Virtueel;4166340;;;\nGENT-08-EVP32-08;107723,52;199452,08;9d6620a0-cc3e-4ec4-bb48-0a58ca2fe944;e31988cf-b856-4fc4-a04a-be2891bec661;Virtueel;4166340;;;\nGENT-08-EVP09-26;107595,54;199069,65;2cb755eb-5cbe-4a9d-b79e-3c48cedb1129;34adea54-a122-4ad5-bdcb-407203df6c63;Virtueel;4166340;;;\nGENT-08-EVP05-25;107623,16;199030,01;3a0101c2-dc36-478b-a5d6-401849afd934;92095bb5-bfc3-416c-b20a-ce4cc89fc5d6;Virtueel;4166340;;;\nGENT-08-EVP11-08;107672,35;199761,82;2e6e60c3-7c99-4b60-8c1d-e9521339d353;7d99da6f-bfcc-4dd3-9841-8c5e1a06884c;Virtueel;4166340;;;\nGENT-08-EVP39-12;107445,73;198673,41;de0cfee0-84da-4dd0-807e-74d43a82233d;1425e5c9-1ccd-4039-8ad2-9d42dd1ba6bb;EVP-I;4166340;;;\nGENT-08-EVP29-14;108467,58;199469,7;ed7fe0dd-da90-4397-a158-f244c761257d;85daceef-77a4-4331-be63-ec6e8c1e8491;Virtueel;4166340;;;\nGENT-08-EVP15-06;107849,8;198504,7;4ca032ef-ceb3-4bc1-8459-b2bc9850f49a;32488029-b2f6-4663-b235-73d61412afbc;Virtueel;4166340;;;\nGENT-08-EVP11-11;107569,97;199525,99;94b437d2-33df-40f8-b4d8-14da97b1bab0;b8f90674-4fb4-4379-8962-80ef4a139d0f;Virtueel;4166340;;;\nGENT-08-EVP05-06;107464,48;198783,21;0bddd514-77dc-4ccf-8cc3-befd2894e631;92095bb5-bfc3-416c-b20a-ce4cc89fc5d6;Virtueel;4166340;;;\nGENT-08-EVP05-24;107633,52;199015,19;aa8d9f64-4296-4801-9884-11467a1638e8;92095bb5-bfc3-416c-b20a-ce4cc89fc5d6;Virtueel;4166340;;;\nGENT-08-EVP27-08;108209,21;199358,6;f1d5a9ee-e364-429f-8824-543daa8e2c5d;86019df2-5212-48ea-8d41-61caecb10cef;Virtueel;4166340;;;\nGENT-08-EVP09-29;107603,02;199108,83;fccf828e-07e0-4f44-a198-7578983dd089;34adea54-a122-4ad5-bdcb-407203df6c63;Virtueel;4166340;;;\nGENT-08-EVP15-07;107682,86;198381,92;6b5e518b-1d21-4a77-a69f-9f915d63a679;9465367a-5bd8-456f-b791-3c189ea0be80;Virtueel;4166340;;;\nGENT-08-EVP13-06;107684,76;199052,44;bc8f78d6-0746-4623-bbfe-efe4e25de307;d1cd0618-a643-4ba5-8873-936097e841cf;Virtueel;4166340;;;\nGENT-08-EVP05-23;107637,24;198988,26;d08f08af-346a-4b05-bb2b-2d05b50f705d;92095bb5-bfc3-416c-b20a-ce4cc89fc5d6;Virtueel;4166340;;;\nGENT-08-EVP13-17;107800,29;199173,09;cba55d00-e548-41d5-be51-5a2a9da9baf2;c002f869-71b2-4cae-bd78-d5f6df7b6b6e;Virtueel;4166340;;;\nGENT-08-EVP37-04;107683,03;198512,98;34756e5f-02ba-4b32-bc8b-430e420c768c;b48d57d2-d3c4-44ba-836e-164a33722de3;Virtueel;4166340;;;\nGENT-08-EVP05-36;107585,06;198858,34;e9e7bd90-bb55-4f7a-93fd-cd63bc13837a;09240d5e-6f0b-4720-9146-2e98eaa5f008;Virtueel;4166340;;;\nGENT-08-EVP15-05;107910,3;198480,41;4ee8a095-a7f7-417c-8967-ac5577540488;32488029-b2f6-4663-b235-73d61412afbc;Virtueel;4166340;;;\nGENT-08-EVP07-15;107463,55;199106,89;d7bef466-35bc-4b3f-b7d4-c9c95670cdca;6eba5d7b-bc0e-434e-8fb8-d2c796927b36;Virtueel;4166340;;;\nGENT-08-EVP05-17;107485,73;198737,04;7f626e43-4708-4c5e-9f4c-554dcde0b514;fb4fca80-b253-4e62-8083-f9735d9662ff;Virtueel;4166340;;;\nGENT-08-EVP05-38;107592,17;198872,26;abb079f6-5fc8-4871-847d-e6672ad32756;09240d5e-6f0b-4720-9146-2e98eaa5f008;Virtueel;4166340;;;\nGENT-08-EVP13-13;107804,93;199128,95;dafb8161-2d8f-4aa2-830a-87cef6ae99cd;510c307d-a996-41a6-96d7-fe0e2e569775;Virtueel;4166340;;;\nGENT-08-EVP23-06;108722,79;198650,67;0681b48e-699e-4360-8d1e-0d4371c1ed4f;4f42b90e-5446-4786-886b-0f84b8095ed5;Virtueel;4166340;;;\nGENT-08-EVP17-11;108185,52;198682,29;4a0429fe-4b90-4b84-bcd3-bd9597fbf636;99027bc2-9a8e-4a1a-b180-f24b4419c477;Virtueel;4166340;;;\nGENT-08-EVP21-08;107789,23;198992,14;0d3cf849-1b4f-4476-b347-6ff06fd8541e;9e391bc8-e58f-41cc-8a89-0e6bb5c05863;Virtueel;4166340;;;\nGENT-08-EVP39-14;107508,45;198685,64;303e3a05-7a60-4547-994f-744ba41f65c8;1425e5c9-1ccd-4039-8ad2-9d42dd1ba6bb;Virtueel;4166340;;;\nGENT-08-EVP11-04;107441,75;199486,03;85ab4ae6-a7a3-431d-ab1f-d620e18e62bb;638bad12-95ec-4a78-8575-28dd7cae1523;Virtueel;4166340;;;\nGENT-08-EVP27-10;108493,03;199109,83;00b69f02-7630-4d62-833b-a20f9dc4ed22;372c046a-cb43-40b9-8485-52f8625d6871;Virtueel;4166340;;;\nGENT-08-EVP09-21;107421,58;199219,01;dec093e8-c9c5-40a5-aaac-e1b11ca2a7ba;1d80517a-82c0-4f3a-96b7-c163767a3371;Virtueel;4166340;;;\nGENT-08-EVP05-07;107447,23;198764,66;ff5ec124-4c6d-4975-b474-1cd9ce641e69;92095bb5-bfc3-416c-b20a-ce4cc89fc5d6;EVP-I;4166340;;;\nGENT-08-EVP11-09;107694,05;199775,23;7f992583-3ac1-4d75-a78e-b71f3492243c;7d99da6f-bfcc-4dd3-9841-8c5e1a06884c;Virtueel;4166340;;;\nGENT-08-EVP21-10;107744,22;198998,64;10c840bb-d2fd-4f15-b851-801d51cfa2eb;9e391bc8-e58f-41cc-8a89-0e6bb5c05863;Virtueel;4166340;;;\nGENT-08-EVP23-04;108753,54;198797,02;b2d9a3d7-e3a8-44e3-8591-e9fd6c514219;7857db6d-540f-44ed-a5e1-2af3fd126576;Virtueel;4166340;;;\nGENT-08-EVP21-03;108292,21;198990,1;81c76879-3d71-484c-8240-8fbb279e92f9;64584f38-c633-4178-9029-b6e1c91e7db8;Virtueel;4166340;;;\nGENT-08-EVP09-28;107591,72;199111,33;4452df13-dc4d-4d0c-890e-83f89149f2f6;34adea54-a122-4ad5-bdcb-407203df6c63;Virtueel;4166340;;;\nGENT-08-EVP23-03;108802,86;198832;da66fbb9-b5bf-4ed7-9a80-de48419b7126;7857db6d-540f-44ed-a5e1-2af3fd126576;Virtueel;4166340;;;\nGENT-08-EVP25-03;108056,88;198365,09;0473c0d6-0918-46ad-b284-31c7e633bab4;ed4036a1-4483-49ea-845c-d93df39e9a69;Virtueel;4166340;;;\nGENT-08-EVP11-10;107537,27;199625,47;9fefbcd0-fca4-4313-9d03-1eaf78126a28;b8f90674-4fb4-4379-8962-80ef4a139d0f;Virtueel;4166340;;;\nGENT-08-EVP21-12;107875,26;199055,48;79b89f3c-3757-4dd5-b3c7-cb475c8c9955;5409f583-b106-433f-9036-0160c0a260e1;Virtueel;4166340;;;\nGENT-08-EVP21-15;107853,6;199077,72;f1462c65-f20a-44aa-adb9-639fc609e58b;5409f583-b106-433f-9036-0160c0a260e1;Virtueel;4166340;;;\nGENT-08-EVP21-13;107866,7;199048,71;8cf87767-ffd2-4025-87de-48841bcd7949;5409f583-b106-433f-9036-0160c0a260e1;Virtueel;4166340;;;\nGENT-08-EVP21-14;107857,08;199066,69;ce00d7cc-868a-44ce-887b-84094d556256;5409f583-b106-433f-9036-0160c0a260e1;Virtueel;4166340;;;\nGENT-08-EVP21-11;107938,04;199041,53;d770582a-cfd2-42ae-b226-d95b300ea9f2;5409f583-b106-433f-9036-0160c0a260e1;Virtueel;4166340;;;\nGENT-08-EVP21-09;107785,88;198992,35;6383718f-90b8-471f-9eb8-3ad3c1049c6e;9e391bc8-e58f-41cc-8a89-0e6bb5c05863;Virtueel;4166340;;;\nGENT-08-EVP17-09;108091,51;198637,44;ce5e4641-72da-4456-9522-911ac1945253;0e44f703-d2d4-4ee5-8dca-ccd50b1711dd;EVP-I;4166340;;;\nGENT-08-EVP19-05;108040,86;198959,61;a5e4b0a4-026d-4dd4-9491-1c42d80274d0;521dfb37-68dd-4591-bf57-289717b9b78e;Virtueel;4166340;;;\nGENT-08-EVP23-07;108693,02;198670,77;d72054ad-e06a-4a26-bfe3-142106d2565d;4f42b90e-5446-4786-886b-0f84b8095ed5;Virtueel;4166340;;;\nGENT-08-EVP39-13;107423,56;198652,25;305756f2-1dd2-45f4-a3a8-26d615446097;1425e5c9-1ccd-4039-8ad2-9d42dd1ba6bb;Virtueel;4166340;;;\nGENT-08-EVP09-30;107545,15;199122,67;2fb5e258-0081-4ba9-878e-3c1bde528e03;34adea54-a122-4ad5-bdcb-407203df6c63;Virtueel;4166340;;;\nGENT-08-EVP39-15;107439,79;198666,16;53fb198b-7f04-48f9-aadb-fc4ddd0ada57;079b9bb0-7e81-49f1-a9c0-9487b76418d9;EVP-I;4166340;;;\nGENT-08-EVP09-05;107338,82;199288,91;b5cf549d-1e33-4de6-978f-5b94e9059db9;0655a16c-c2c1-46c6-8d9f-63a3a0a81b1d;EVP-F;4166340;;;\nGENT-08-EVP29-03;108397,35;199430;d36e5b08-1583-425e-8882-81c9ee6363d6;85daceef-77a4-4331-be63-ec6e8c1e8491;EVP-F;4166340;;;\nGENT-08-EVP07-14;107454,61;199104,63;6eba5d7b-bc0e-434e-8fb8-d2c796927b36;be66b082-c8de-4271-8e08-0dbd3263e2d1;EVP-F;4166340;;;\nGENT-08-EVP38-06;107662,58;198490,99;19fff20e-b206-4adb-910f-203b293fd911;01652bec-e801-489c-abe7-88699e759e99;EVP-F;4166340;;;\nGENT-08-EVP38-12;107680,4;198559,66;e9722ebb-54d4-40f4-a58f-03d3d9e46778;9cc4116e-6bc4-404e-9547-138171d280a6;EVP-F;4166340;;;\nGENT-08-EVP38-08;107660,61;198475,58;d13d460f-73d2-4368-8fe4-793d542092c3;01652bec-e801-489c-abe7-88699e759e99;EVP-F;4166340;;;\nGENT-08-EVP27-03;108228,67;199346,8;4a190d76-9a3f-47c9-8124-148adf4baee0;f7192653-66bf-4feb-b77e-c377216f1766;EVP-F;4166340;;;\nGENT-08-EVP39-10;107296,55;198546,33;22fd51a7-d05f-477b-bf2b-148af98eac09;eebcc594-ea8d-4a74-82e2-f0b69f359022;EVP-F;4166340;;;\nGENT-08-EVP38-04;107595,34;198717,07;3da13ec6-2d7f-460e-96d1-9395fd6caa0d;d310ab2a-9b8d-4226-8552-6235e89356e9;EVP-F;4166340;;;\nGENT-08-EVP39-08;107314,36;198558,6;cd102f14-64cc-4f12-b6f4-04871a1bf2a6;eebcc594-ea8d-4a74-82e2-f0b69f359022;EVP-F;4166340;;;\nGENT-08-EVP32-03;107909,68;199187,87;b9309113-621b-4c56-88c4-426458598c83;d35e6922-5431-423f-a62a-7fca9e9571ab;EVP-F;4166340;;;\nGENT-08-EVP09-09;107298,6;199362,3;7b9197bd-b2ef-4b8b-b596-a55950708d96;0655a16c-c2c1-46c6-8d9f-63a3a0a81b1d;EVP-F;4166340;;;\nGENT-08-EVP07-04;107455,57;198990,9;ec3f81b8-69d4-4abe-996a-6dbe2600c698;38aa0fe0-6178-4136-bf19-f71b59f51909;EVP-F;4166340;;;\nGENT-08-EVP07-11;107534,42;198886,68;a293196f-31c6-46d7-8c5c-7b62e7263e7e;3fc808e8-4bf6-4d32-90ff-07b04fe21310;EVP-F;4166340;;;\nGENT-08-EVP05-29;107619,93;198920,59;effabff7-69de-4654-b19d-909c80f62f90;81f04eaa-75c5-45e5-a328-d44f253283a9;EVP-F;4166340;;;\nGENT-08-EVP39-07;107328,29;198568,22;f7caacc0-0db6-438d-814f-58aa43e8bb33;eebcc594-ea8d-4a74-82e2-f0b69f359022;EVP-F;4166340;;;\nGENT-08-EVP09-08;107306,68;199346,34;3523723a-e81a-418e-bc89-02a7de079d5e;0655a16c-c2c1-46c6-8d9f-63a3a0a81b1d;EVP-F;4166340;;;\nGENT-08-EVP38-13;107681,9;198577,85;1bd2a9cc-e9d8-4738-bdf1-814fec05b7fc;9cc4116e-6bc4-404e-9547-138171d280a6;EVP-F;4166340;;;\nGENT-08-EVP07-13;107424,52;199082;891ece6b-277b-4a85-9bda-2d6b38c950e5;be66b082-c8de-4271-8e08-0dbd3263e2d1;EVP-F;4166340;;;\nGENT-08-EVP13-24;107614,24;199162,43;7605e1ef-92d0-49cd-a164-ca6875b6ca1e;d4939ac3-adda-476c-8550-24061069af3f;EVP-F;4166340;;;\nGENT-08-EVP38-02;107619,37;198695,86;0ffeec50-e53f-4f7b-a5fd-888733c6c0c6;d310ab2a-9b8d-4226-8552-6235e89356e9;EVP-F;4166340;;;\nGENT-08-EVP05-13;107499,51;198751,3;bb68044c-90ea-4e85-b2e1-925e70d4ca99;4c42c7c1-4bb4-41df-b5cf-25e0f7519788;EVP-F;4166340;;;\nGENT-08-EVP27-05;108203,24;199334,53;84c292cb-4ef9-4f5a-ab87-32c419817e4a;f7192653-66bf-4feb-b77e-c377216f1766;EVP-F;4166340;;;\nGENT-08-EVP09-04;107349,71;199269,92;0790dc08-786f-4c6c-aa38-24cd10b228c3;0655a16c-c2c1-46c6-8d9f-63a3a0a81b1d;EVP-F;4166340;;;\nGENT-08-EVP38-11;107680,09;198555,91;0b78c46a-c476-4cfb-82c5-ea3deef680d8;9cc4116e-6bc4-404e-9547-138171d280a6;EVP-F;4166340;;;\nGENT-08-EVP05-16;107487,07;198738,23;fb4fca80-b253-4e62-8083-f9735d9662ff;4c42c7c1-4bb4-41df-b5cf-25e0f7519788;EVP-F;4166340;;;\nGENT-08-EVP38-10;107679,08;198543,84;d1f69385-5e3d-4154-a0e0-f0d37bd60f09;9cc4116e-6bc4-404e-9547-138171d280a6;EVP-F;4166340;;;\nGENT-08-EVP29-02;108436,28;199446,55;140ba51a-98eb-41e0-8550-446d650a0de5;85daceef-77a4-4331-be63-ec6e8c1e8491;EVP-F;4166340;;;\nGENT-08-EVP39-02;107387,94;198621,59;2ad59ba2-10eb-43ea-8055-a54ea5141f14;db899786-1323-4f62-8fd0-2d1d6d446131;EVP-F;4166340;;;\nGENT-08-EVP13-04;107692,85;199065,11;7d090d59-b00c-42b8-8f6b-f33325f94bdd;3dadc330-be94-4fd4-81d6-81df55e8c4f5;EVP-F;4166340;;;\nGENT-08-EVP39-06;107341,41;198577,54;c30616eb-2c0a-40e9-88c5-0ee8a3e4d307;eebcc594-ea8d-4a74-82e2-f0b69f359022;EVP-F;4166340;;;\nGENT-08-EVP13-11;107781,74;199127,37;5866d0fb-7e96-4423-8684-4f0beaf8a44c;510c307d-a996-41a6-96d7-fe0e2e569775;EVP-F;4166340;;;\nGENT-08-EVP39-04;107373,36;198603,94;bdf180c5-bd0d-479f-94ad-1cc1c4874961;db899786-1323-4f62-8fd0-2d1d6d446131;EVP-F;4166340;;;\nGENT-08-EVP32-02;107933,75;199199,79;66d2e28b-7f40-465e-b137-cd0b2e734b3b;d35e6922-5431-423f-a62a-7fca9e9571ab;EVP-F;4166340;;;\nGENT-08-EVP13-12;107795,71;199135,65;ca8662aa-81ec-4439-8f40-e9f548fbac2b;510c307d-a996-41a6-96d7-fe0e2e569775;EVP-F;4166340;;;\nGENT-08-EVP05-28;107607,42;198899,64;663af2a8-d8aa-41e2-8d0f-9c0710e8232c;81f04eaa-75c5-45e5-a328-d44f253283a9;EVP-F;4166340;;;\nGENT-08-EVP29-01;108450,41;199458,28;09f3a94e-03ae-4300-8612-7daea72ca0f2;85daceef-77a4-4331-be63-ec6e8c1e8491;EVP-F;4166340;;;\nGENT-08-EVP07-09;107502,73;198928,57;b8db5026-8e49-4d9c-afa1-f8f15fb350ad;3fc808e8-4bf6-4d32-90ff-07b04fe21310;EVP-F;4166340;;;\nGENT-08-EVP07-07;107488,23;198947,74;e74f0d40-912f-4724-a0e1-a6e319c05360;3fc808e8-4bf6-4d32-90ff-07b04fe21310;EVP-F;4166340;;;\nGENT-08-EVP09-07;107316,95;199326,18;4624a328-ab8c-4e01-97b2-bbc4384945a6;0655a16c-c2c1-46c6-8d9f-63a3a0a81b1d;EVP-F;4166340;;;\nGENT-08-EVP27-04;108215,99;199340,71;0639eb8f-d53b-480c-8e35-fbd956a5d755;f7192653-66bf-4feb-b77e-c377216f1766;EVP-F;4166340;;;\nGENT-08-EVP13-05;107675,48;199036,16;d1cd0618-a643-4ba5-8873-936097e841cf;3dadc330-be94-4fd4-81d6-81df55e8c4f5;EVP-F;4166340;;;\nGENT-08-EVP09-03;107358,59;199256,99;e02cf41b-4a78-48f5-81df-3d5fbc446728;0655a16c-c2c1-46c6-8d9f-63a3a0a81b1d;EVP-F;4166340;;;\nGENT-08-EVP29-04;108374,31;199418,99;895e541a-f2c6-43cd-b96f-50301299626e;85daceef-77a4-4331-be63-ec6e8c1e8491;EVP-F;4166340;;;\nGENT-08-EVP38-15;107683,37;198595,81;a818ae35-5f48-461a-907e-c171338f7c15;9cc4116e-6bc4-404e-9547-138171d280a6;EVP-F;4166340;;;\nGENT-08-EVP09-12;107433,52;199215,37;937d4f35-91cf-4e90-a8f6-859b403d81ef;1d80517a-82c0-4f3a-96b7-c163767a3371;EVP-F;4166340;;;\nGENT-08-EVP07-10;107521,09;198904,29;7551a430-c95a-44fd-a0b7-b24264ab0462;3fc808e8-4bf6-4d32-90ff-07b04fe21310;EVP-F;4166340;;;\nGENT-08-EVP05-31;107629,27;198937,91;8d566272-ad01-436b-8e73-30842b936f59;81f04eaa-75c5-45e5-a328-d44f253283a9;EVP-F;4166340;;;\nGENT-08-EVP15-04;107742,8;198602,78;d9bd3e8b-a0c4-4ee7-bb30-51db9bffe3c3;a1cca6e3-71c3-4313-81c0-ffc9849c5b0b;EVP-F;4166340;;;\nGENT-08-EVP07-02;107431,77;199022,64;4cefa4a7-a199-4cf4-9b93-9ab29c0f4eb8;38aa0fe0-6178-4136-bf19-f71b59f51909;EVP-F;4166340;;;\nGENT-08-EVP15-03;107755,72;198591,41;c63633d6-0c5a-4bf0-ba0a-7ffecd6b3386;a1cca6e3-71c3-4313-81c0-ffc9849c5b0b;EVP-F;4166340;;;\nGENT-08-EVP11-03;107474,29;199440,22;bafc804c-d49f-4cce-badc-d4065d39f552;638bad12-95ec-4a78-8575-28dd7cae1523;EVP-F;4166340;;;\nGENT-08-EVP07-03;107442,97;199007,51;e24aa643-872c-498b-ad21-505b2b4d009e;38aa0fe0-6178-4136-bf19-f71b59f51909;EVP-F;4166340;;;\nGENT-08-EVP13-23;107621,54;199162,4;38b68abe-2992-434b-ae30-209c4427cfa6;d4939ac3-adda-476c-8550-24061069af3f;EVP-F;4166340;;;\nGENT-08-EVP11-02;107480,76;199457,8;b7d32974-b0d5-432d-b6e8-296a2a5918be;638bad12-95ec-4a78-8575-28dd7cae1523;EVP-F;4166340;;;\nGENT-08-EVP07-08;107495,01;198938,82;15408982-24fd-44c7-a7c0-46bfef3aba69;3fc808e8-4bf6-4d32-90ff-07b04fe21310;EVP-F;4166340;;;\nGENT-08-EVP09-06;107326,61;199308,97;6650dc2d-4692-4438-af1e-6d63f93e19f3;0655a16c-c2c1-46c6-8d9f-63a3a0a81b1d;EVP-F;4166340;;;\nGENT-08-EVP05-11;107516,8;198769,27;e9a2ac25-ca6a-48f2-af12-92a8a390bdd9;4c42c7c1-4bb4-41df-b5cf-25e0f7519788;EVP-F;4166340;;;\nGENT-08-EVP05-10;107538,92;198797,06;339c2191-0159-47a4-bca8-36745014f5a6;4c42c7c1-4bb4-41df-b5cf-25e0f7519788;EVP-F;4166340;;;\nGENT-08-EVP07-05;107467,58;198974,86;2dc11091-a811-4f8e-b345-df31afacbf9e;38aa0fe0-6178-4136-bf19-f71b59f51909;EVP-F;4166340;;;\nGENT-08-EVP38-03;107608,14;198705,78;b66aa469-987c-4b6d-9d72-003f294fd3fb;d310ab2a-9b8d-4226-8552-6235e89356e9;EVP-F;4166340;;;\nGENT-08-EVP05-09;107549,75;198814,7;be2897a6-058d-4a9b-b14c-3c8885338e88;4c42c7c1-4bb4-41df-b5cf-25e0f7519788;EVP-F;4166340;;;\nGENT-08-EVP13-10;107765,19;199117,93;98da036a-dfa6-482c-a212-1f50c5588af6;510c307d-a996-41a6-96d7-fe0e2e569775;EVP-F;4166340;;;\nGENT-08-EVP29-07;108438,13;199558,38;56f3799f-a628-4626-82b9-d0171571b77c;1a7f4553-77e8-4d20-8fef-a4fb3736626f;EVP-F;4166340;;;\nGENT-08-EVP29-06;108449,63;199539,66;ead92f60-cdbc-401b-a729-1acea8964d53;1a7f4553-77e8-4d20-8fef-a4fb3736626f;EVP-F;4166340;;;\nGENT-08-EVP05-33;107660,55;198939,4;36a51c85-715e-4dfb-8bf1-82575e634df0;82ed2bc4-bd0b-4d1f-9841-3c37e02fad6c;EVP-F;4166340;;;\nGENT-08-EVP05-40;107581,19;198882,08;332c222d-275f-4586-9403-67767c9a2ff5;92095bb5-bfc3-416c-b20a-ce4cc89fc5d6;EVP-F;4166340;;;\nGENT-08-EVP05-12;107468,61;198788,36;4e2cac6c-6f67-44db-bab8-a9a748700d68;92095bb5-bfc3-416c-b20a-ce4cc89fc5d6;EVP-F;4166340;;;\nGENT-08-EVP05-41;107568,75;198822,56;2e102018-d03b-4bc3-a612-61a8fdd58849;09240d5e-6f0b-4720-9146-2e98eaa5f008;EVP-F;4166340;;;\nGENT-08-EVP05-02;107503,58;198755,58;8de514f5-cc0d-4b91-96a1-b4b94b57db86;4c42c7c1-4bb4-41df-b5cf-25e0f7519788;EVP-F;4166340;;;\nGENT-08-EVP13-28;107730,63;199091,14;e8ce2559-9554-481d-a11e-34a85aace935;3dadc330-be94-4fd4-81d6-81df55e8c4f5;EVP-F;4166340;;;\nGENT-08-EVP05-42;107645,02;198973,14;f712c896-dcf8-49d2-a9e0-99e599c8fe61;82ed2bc4-bd0b-4d1f-9841-3c37e02fad6c;EVP-F;4166340;;;\nGENT-08-EVP41-05;107380,74;198611,9;68be2dad-c082-43f5-bf23-71148cabdf9d;db899786-1323-4f62-8fd0-2d1d6d446131;EVP-F;4166340;;;\nGENT-08-EVP14-01;107809,41;199133,99;24c0cf9e-bac5-4da4-87cb-874ef917dbcb;510c307d-a996-41a6-96d7-fe0e2e569775;EVP-F;4166340;;;\nGENT-08-EVP15-09;107739,9;198588,94;24c10f8b-c54d-47a5-b013-5ef85b973724;9465367a-5bd8-456f-b791-3c189ea0be80;EVP-F;4166340;;;\nGENT-08-EVP10-01;107476,5;199173,48;f5102cb1-62ef-4ca6-ad5f-5700c717387d;392033cd-e812-42cf-b068-c54e0f83d8b4;EVP-F;4166340;;;\nGENT-08-EVP05-43;107578,55;198877,67;9ab5ea83-ed39-4ac2-9188-47e48e3d6cef;92095bb5-bfc3-416c-b20a-ce4cc89fc5d6;EVP-F;4166340;;;\nGENT-08-EVP08-01;107268,76;198586,17;1c761bb3-44de-4d6e-9bd5-74ecb365023a;cc9ca970-1680-4c51-aa8f-308bb0093b1b;EVP-F;4166340;;;\nGENT-08-EVP08-02;107279,56;198591,33;5e2dcb75-325e-4ca4-b655-bb34fb444e44;;EVP-F;4166340;;;\nGENT-08-EVP07-23;107405,55;199056,33;fb05027f-b161-4c75-8082-49c9cde0e100;0694c8ef-8397-49e9-b8e9-44cff040272f;EVP-F;4166340;;;\nGENT-08-EVP18-01;108095,31;198634,81;75c84363-ba62-4c93-a870-929d0bc2d9df;0e44f703-d2d4-4ee5-8dca-ccd50b1711dd;EVP-F;4166340;;;\nGENT-08-EVP09-31;107432,25;199198,11;6554f11e-f3a7-42d1-95f2-f1c79102d4eb;1d80517a-82c0-4f3a-96b7-c163767a3371;EVP-F;4166340;;;\nGENT-08-EVP40-02;107629,08;198705,08;12ef489d-5b43-4101-915a-a19d66e9f131;8436afff-349c-412a-a0f2-f957f54af919;EVP-F;4166340;;;\nGENT-08-EVP05-03;107520,6;198773,95;74dcaca0-66ec-4b56-b98b-fac5b531c994;4c42c7c1-4bb4-41df-b5cf-25e0f7519788;EVP-F;4166340;;;\nGENT-08-EVP19-06;108399,87;198772,19;91ba8c13-e44a-48e2-b398-d84ce6653e3a;2906cbe7-157f-4540-b062-196f1cf75362;EVP-F;4166340;;;\nGENT-08-EVP18-02;108127,61;198641,3;53056090-7a92-4c53-adcc-73397b2db203;0e44f703-d2d4-4ee5-8dca-ccd50b1711dd;EVP-F;4166340;;;\nGENT-08-EVP11-14;107519,48;199501,99;8f444f5c-310b-4850-b6db-aa76e256eced;b8f90674-4fb4-4379-8962-80ef4a139d0f;EVP-F;4166340;;;\nGENT-08-EVP11-15;107522,84;199510,98;4f93d387-2645-477b-ac36-5326e0decf8e;b8f90674-4fb4-4379-8962-80ef4a139d0f;EVP-F;4166340;;;\nGENT-08-EVP10-02;107516,4;199180,08;a92296dc-bc54-4d01-9e7e-90a571eaeda0;392033cd-e812-42cf-b068-c54e0f83d8b4;EVP-F;4166340;;;\nGENT-08-EVP14-02;107930,28;199215,44;d4f2d1a4-2677-483a-89fc-739874f292db;c002f869-71b2-4cae-bd78-d5f6df7b6b6e;EVP-F;4166340;;;\nGENT-08-EVP40-03;107663,56;198502,44;467145c7-3c5c-4366-9132-f6a975dca3b9;01652bec-e801-489c-abe7-88699e759e99;EVP-F;4166340;;;\nGENT-08-EVP10-03;107425,49;199237,13;1e403311-8588-448d-befb-3078254a0a20;1d80517a-82c0-4f3a-96b7-c163767a3371;EVP-F;4166340;;;\nGENT-08-EVP39-16;107568,12;198385,45;5de18daf-596e-45e4-96a1-869f9006de15;b48d57d2-d3c4-44ba-836e-164a33722de3;EVP-F;4166340;;;\nGENT-08-EVP05-04;107476,69;198797,34;06074100-6a6a-4da2-b736-49f6ddfaf74c;92095bb5-bfc3-416c-b20a-ce4cc89fc5d6;EVP-F;4166340;;;\nGENT-08-EVP12-01;107640,5;199794,94;18ba65ef-a546-4e61-abc3-39e7f645fc30;b21e2750-e2a5-4be6-bccf-8057690cb4e0;EVP-F;4166340;;;\nGENT-08-EVP29-16;108429,16;199466,83;19321b3a-3dc0-44f3-9843-8ef03f72f7f9;85daceef-77a4-4331-be63-ec6e8c1e8491;EVP-F;4166340;;;\nGENT-08-EVP05-44;107565,21;198845,71;98812ee1-77e0-43e6-9573-a07486c249ec;92095bb5-bfc3-416c-b20a-ce4cc89fc5d6;EVP-F;4166340;;;\nGENT-08-EVP25-08;108109,43;198135,74;77b5e3ce-1bef-479c-a111-cee40a4d5963;22f3d46c-5334-4c74-b00b-8755cbf46208;EVP-F;4166340;;;\nGENT-08-EVP05-05;107485,64;198806,87;82461f43-7ef4-4fcb-b398-d34d704d3fd1;92095bb5-bfc3-416c-b20a-ce4cc89fc5d6;EVP-F;4166340;;;\nGENT-08-EVP08-03;107190,33;198513,82;9e716e94-17d0-442d-861c-a959f6e93a5f;cc9ca970-1680-4c51-aa8f-308bb0093b1b;EVP-F;4166340;;;\nGENT-08-EVP08-04;107171,98;198504,63;1c7a4006-ef43-4b18-9479-07c7a03fefa1;;EVP-F;4166340;;;\nGENT-08-EVP14-03;107834,04;199170,99;d68fc94b-2ac7-48e4-8922-ff50067aedaa;c002f869-71b2-4cae-bd78-d5f6df7b6b6e;EVP-F;4166340;;;\nGENT-08-EVP09-32;107600,78;199061,39;93698120-9fc6-4145-a9dc-f9a052c419d8;34adea54-a122-4ad5-bdcb-407203df6c63;EVP-F;4166340;;;\nGENT-08-EVP40-04;107682,87;198655,13;31b27326-0c80-4bb2-a547-8ef72bdfafff;8436afff-349c-412a-a0f2-f957f54af919;EVP-F;4166340;;;\nGENT-08-EVP40-05;107671,59;198665,34;b786b241-be26-4d70-a036-3c6cdcad9154;8436afff-349c-412a-a0f2-f957f54af919;EVP-F;4166340;;;\nGENT-08-EVP40-06;107667,63;198550,87;d15f2a6d-5be9-45b7-90e2-5659f6ea3a1f;8436afff-349c-412a-a0f2-f957f54af919;EVP-F;4166340;;;\nGENT-08-EVP40-07;107668,87;198567,61;a9e85b9c-30de-460d-aaa7-f4babecaed4f;8436afff-349c-412a-a0f2-f957f54af919;EVP-F;4166340;;;\nGENT-08-EVP05-45;107637,1;198955,34;2050b9d4-0eaa-42b3-a9ca-ff10622492b6;82ed2bc4-bd0b-4d1f-9841-3c37e02fad6c;EVP-F;4166340;;;\nGENT-08-EVP14-04;107849,25;199176,84;ed13de04-9e4e-4d30-b05c-cf77ba1e81ba;c002f869-71b2-4cae-bd78-d5f6df7b6b6e;EVP-F;4166340;;;\nGENT-08-EVP14-05;107849,03;199186,44;b9c58bd5-ee80-4de7-943b-3395c6859fe2;c002f869-71b2-4cae-bd78-d5f6df7b6b6e;EVP-F;4166340;;;\nGENT-08-EVP14-06;107842,17;199201,54;252ae60f-6a2d-4030-b3d6-0e9360212cf5;c002f869-71b2-4cae-bd78-d5f6df7b6b6e;EVP-F;4166340;;;\nGENT-08-EVP10-04;107419,22;199189;2df5374c-6713-4d9c-8edf-dda2603fcdce;1d80517a-82c0-4f3a-96b7-c163767a3371;EVP-F;4166340;;;\nGENT-08-EVP10-05;107409,9;199186,43;c1616949-80ca-4f5d-ba07-41978f7a05cf;1d80517a-82c0-4f3a-96b7-c163767a3371;EVP-F;4166340;;;\nGENT-08;107668,22;198363,78;079b9bb0-7e81-49f1-a9c0-9487b76418d9;;11,5m2;4166340;;;\n";
+
+const CAT_OF = {
+  "EVP-U":"EVP", "EVP-F":"FACADE", "EVP-I":"EVPI", "Virtueel":"EVPI",
+  "11,5m2":"POP", "Virtual - Greenfield":"GREEN"
+};
+function catOf(ot){ return CAT_OF[ot] || ("RAW:"+(ot||"")); }
+const CAT_META = {
+  "EVP":{label:"EVP", note:"draagt kabel", key:"evpu"},
+  "FACADE":{label:"Façadebox", note:"", key:"evpf"},
+  "EVPI":{label:"EVP-I", note:"", key:"evpi"},
+  "POP":{label:"POP", note:"", key:"pop"},
+  "GREEN":{label:"Greenfield", note:"", key:"greenfield"},
+};
+const CAT_ORDER = ["EVP","FACADE","EVPI","POP","GREEN"];
+function meta(cat){
+  if(CAT_META[cat]) return CAT_META[cat];
+  if(cat && cat.indexOf("RAW:")===0){ const ot=cat.slice(4); return {label:(ot||"\u2014"), note:"", key:"overig"}; }
+  return {label:(cat||"\u2014"), note:"", key:"overig"};
+}
+function typeRank(cat){ const i = CAT_ORDER.indexOf(cat); return i<0 ? 99 : i; }
+const NONE = "\u0000none";
+
+function el(tag, props, kids){
+  const n = document.createElement(tag);
+  if(props) for(const k in props){
+    if(k==="class") n.className = props[k];
+    else if(k==="text") n.textContent = props[k];
+    else if(k.slice(0,2)==="on") n.addEventListener(k.slice(2).toLowerCase(), props[k]);
+    else if(props[k]!==null && props[k]!==undefined) n.setAttribute(k, props[k]);
+  }
+  if(kids) (Array.isArray(kids)?kids:[kids]).forEach(c=>{ if(c!=null) n.appendChild(typeof c==="string"?document.createTextNode(c):c); });
+  return n;
+}
+
+/* ---- CSV ---- */
+function splitLine(line){
+  const out=[]; let cur=""; let q=false;
+  for(let i=0;i<line.length;i++){
+    const c=line[i];
+    if(q){ if(c==='"'){ if(line[i+1]==='"'){cur+='"'; i++;} else q=false; } else cur+=c; }
+    else { if(c==='"') q=true; else if(c===';'){ out.push(cur); cur=""; } else cur+=c; }
+  }
+  out.push(cur); return out;
+}
+function parseCSV(text){
+  const lines = text.replace(/^\uFEFF/,"").split(/\r?\n/).filter(l=>l.trim().length>0);
+  if(!lines.length) return {headers:[], rows:[]};
+  const headers = splitLine(lines[0]).map(h=>h.trim());
+  const rows = [];
+  for(let i=1;i<lines.length;i++){
+    const cells = splitLine(lines[i]); const obj={};
+    headers.forEach((h,idx)=> obj[h] = (cells[idx]!==undefined?cells[idx]:"").trim());
+    rows.push(obj);
+  }
+  return {headers, rows};
+}
+function findCol(headers, tests){
+  for(const t of tests){
+    const hit = headers.find(h=>{ const hl=h.toLowerCase().trim(); return t instanceof RegExp ? t.test(hl) : hl===t || hl.includes(t); });
+    if(hit) return hit;
+  }
+  return null;
+}
+
+/* ---- POP COMPACT: verwacht cijfer 4+5 per kabel ---- */
+let POP_COMPACT_MAP = {};
+let KABEL_TYPE_MAP = {}; // GENT-K... -> "192V" | "96V"
+const INITIAL_POP_COMPACT_MAP = Object.assign({}, POP_COMPACT_MAP);
+const INITIAL_KABEL_TYPE_MAP = {};
+function popExpected(cable){
+  // Strips trailing suffix (e.g. -01/-02) to match base cable key
+  if(!cable) return null;
+  const base = cable.replace(/-\d{2}$/, "");
+  return POP_COMPACT_MAP[base] || POP_COMPACT_MAP[cable] || null;
+}
+
+/* ---- model ---- */
+function mainKeyOf(cable){ return cable.slice(0,-2); }
+function labelRef(label){ const d=(label||"").replace(/[^0-9]/g,""); return d.length>=4 ? d.slice(d.length-4, d.length-2) : null; }
+function labelSuffix(label){ const d=(label||"").replace(/[^0-9]/g,""); return d.length>=2 ? d.slice(d.length-2) : null; }
+
+function buildModel(parsed){
+  const H = parsed.headers;
+  const C = {
+    ne:  findCol(H, ["netwerk element","element"]),
+    id:  findCol(H, ["id (gui)", /^id/]),
+    pid: findCol(H, ["parent_id (gui)","parent"]),
+    ot:  findCol(H, ["objecttype","type"]),
+    gvk: findCol(H, ["gvk","kabel"]),
+    x:   findCol(H, [/^x$/]),
+    y:   findCol(H, [/^y$/]),
+  };
+  if(!C.id || !C.pid || !C.gvk) return {error:"Geen herkenbare kolommen gevonden. Verwacht minstens ID (GUI), Parent_ID (GUI) en GVK."};
+
+  const rows = parsed.rows;
+  const byId = new Map(); rows.forEach(r=> byId.set(r[C.id], r));
+  function resolve(startId){
+    const seen=new Set(); let cur=startId; let hops=0;
+    while(cur && byId.has(cur) && !seen.has(cur)){
+      seen.add(cur);
+      const g = (byId.get(cur)[C.gvk]||"").trim();
+      if(g) return {cable:g, hops};
+      cur = byId.get(cur)[C.pid]; hops++;
+    }
+    return {cable:null, hops};
+  }
+
+  const groups = new Map();   // cableId -> {cable, items[], counts{}}
+  const typeTotals = {};
+  const labelMap = new Map(); // label -> [{ne, ot, cable}]
+  rows.forEach(r=>{
+    const {cable,hops} = resolve(r[C.id]);
+    const key = cable===null ? NONE : cable;
+    if(!groups.has(key)) groups.set(key, {cable, items:[], counts:{}});
+    const g = groups.get(key);
+    const ot = r[C.ot] || "";
+    const cat = catOf(ot);
+    g.items.push({row:r, hops, ot, cat, ne:r[C.ne]||"", x:r[C.x]||"", y:r[C.y]||"", ref:labelRef(r[C.ne]||""), suf:labelSuffix(r[C.ne]||"")});
+    g.counts[cat] = (g.counts[cat]||0)+1;
+    typeTotals[cat] = (typeTotals[cat]||0)+1;
+    const lab = (r[C.ne]||"").trim();
+    if(!labelMap.has(lab)) labelMap.set(lab, []);
+    labelMap.get(lab).push({ne:r[C.ne]||"", ot, cable});
+  });
+
+  const dupLabels = [...labelMap.entries()].filter(([l,arr])=> l!=="" && arr.length>1)
+      .map(([l,arr])=>({label:l, count:arr.length, where:arr}))
+      .sort((a,b)=> b.count-a.count || a.label.localeCompare(b.label, undefined,{numeric:true}));
+  const dupSet = new Set(dupLabels.map(d=>d.label));
+  const emptyLabels = (labelMap.get("")||[]).length;
+  const distinctLabels = [...labelMap.keys()].filter(k=>k!=="").length;
+
+  // per-cable consistency: all labels on a cable must share the same 3rd+4th-last digit
+  const refIssues = []; const refOddSet = new Set();
+  for(const [cab,g] of groups){
+    if(cab===NONE) continue;
+    const refs = g.items.map(it=>it.ref).filter(r=>r!==null);
+    g.refHasIssue=false; g.refExpected=null; g.refVariants={};
+    const popVal = popExpected(cab);
+    const uniqueRefs = new Set(refs);
+    const hasInternalVariation = uniqueRefs.size > 1;
+    const hasPopMismatch = popVal !== null && (refs.some(r => r !== popVal));
+    if(hasInternalVariation || hasPopMismatch){
+      const cnt={}; refs.forEach(r=> cnt[r]=(cnt[r]||0)+1);
+      // expected = POP COMPACT waarde indien beschikbaar; anders: enige oneven variant of meest frequente
+      let expected;
+      if(popVal !== null){ expected = popVal; }
+      else {
+        const odds = Object.keys(cnt).filter(r=> parseInt(r,10)%2===1);
+        if(odds.length===1){ expected = odds[0]; }
+        else { let best=-1; Object.keys(cnt).sort().forEach(r=>{ if(cnt[r]>best){best=cnt[r]; expected=r;} }); }
+      }
+      g.refHasIssue=true; g.refExpected=expected; g.refVariants=cnt;
+      const odd=[];
+      g.items.forEach(it=>{ if(it.ref!==null && it.ref!==expected){ it.refOdd=true; it.refExpected=expected; odd.push({ne:it.ne, ref:it.ref}); refOddSet.add(it.ne); } });
+      refIssues.push({cable:cab, expected, variants:cnt, odd, fromPop: popVal !== null});
+    }
+  }
+  refIssues.sort((a,b)=> a.cable.localeCompare(b.cable, undefined,{numeric:true}));
+
+  // per cable, per lade: the last-2 digit (volgnummer) must be unique within a lade
+  const sufIssues = []; const sufOddSet = new Set();
+  for(const [cab,g] of groups){
+    if(cab===NONE){ continue; }
+    const byLade={}; g.items.forEach(it=>{ const L=(it.ref===null?"?":it.ref); (byLade[L]=byLade[L]||[]).push(it); });
+    const dups=[];
+    for(const L in byLade){
+      const cnt={}; byLade[L].forEach(it=>{ if(it.suf!==null) cnt[it.suf]=(cnt[it.suf]||0)+1; });
+      for(const s in cnt){ if(cnt[s]>1){ const labs=byLade[L].filter(it=>it.suf===s).map(it=>it.ne); labs.forEach(l=>sufOddSet.add(l)); dups.push({lade:L, suf:s, count:cnt[s], labels:labs}); } }
+    }
+    g.sufHasIssue = dups.length>0;
+    if(dups.length) sufIssues.push({cable:cab, dups});
+  }
+  sufIssues.sort((a,b)=> a.cable.localeCompare(b.cable, undefined,{numeric:true}));
+
+  // roll up into main cables
+  const mains = new Map();   // mainKey -> {mainKey, cableKeys[], counts{}, total}
+  for(const [cab, g] of groups){
+    if(cab===NONE) continue;
+    const mk = mainKeyOf(cab);
+    if(!mains.has(mk)) mains.set(mk, {mainKey:mk, cableKeys:[], counts:{}, total:0});
+    const M = mains.get(mk);
+    M.cableKeys.push(cab);
+    for(const ot in g.counts){ M.counts[ot]=(M.counts[ot]||0)+g.counts[ot]; M.total += g.counts[ot]; }
+  }
+
+  const cableCount = [...groups.keys()].filter(k=>k!==NONE).length;
+  return {C, groups, mains, typeTotals, total:rows.length, cableCount, mainCount:mains.size,
+          dupLabels, dupSet, emptyLabels, distinctLabels, refIssues, refOddSet, sufIssues, sufOddSet};
+}
+
+/* ---- state ---- */
+let MODEL = null;
+let MODE = "main";
+const STATE = { search:"", sort:"id", activeTypes:new Set(), expanded:new Set(), filterErrors:false };
+
+function present(){ return Object.keys(MODEL.typeTotals).sort((a,b)=>typeRank(a)-typeRank(b)); }
+function visibleItems(group){ return group.items.filter(it=> STATE.activeTypes.has(it.cat)); }
+
+/* ---- shared bits ---- */
+function compositionBar(counts, cls){
+  const bar = el("div",{class:cls});
+  const total = present().filter(ot=>STATE.activeTypes.has(ot)).reduce((a,ot)=>a+(counts[ot]||0),0) || 1;
+  present().filter(ot=>STATE.activeTypes.has(ot) && counts[ot]).forEach(ot=>{
+    const seg = el("span",{class:"t-"+meta(ot).key});
+    seg.style.width = (counts[ot]/total*100)+"%";
+    seg.style.background = "var(--c)";
+    seg.title = meta(ot).label+": "+counts[ot];
+    bar.appendChild(seg);
+  });
+  return bar;
+}
+function countBadges(counts){
+  const box = el("div",{class:"gcounts"});
+  present().filter(ot=>STATE.activeTypes.has(ot) && counts[ot]).forEach(ot=>{
+    const m=meta(ot);
+    box.appendChild(el("span",{class:"badge t-"+m.key},[el("span",{class:"d"}), m.label+" ", el("b",{text:String(counts[ot])})]));
+  });
+  return box;
+}
+function typeBlocksFor(items){
+  const byCat={}; items.forEach(it=> (byCat[it.cat]=byCat[it.cat]||[]).push(it));
+  const cats=Object.keys(byCat).sort((a,b)=>typeRank(a)-typeRank(b));
+  return cats.map(c=>{
+    const m=meta(c);
+    const raws=[...new Set(byCat[c].map(it=>it.ot).filter(Boolean))].join(", ");
+    const block=el("div",{class:"typeblock t-"+m.key});
+    block.appendChild(el("h4",{},[el("span",{class:"d"}), document.createTextNode(m.label+" ("+byCat[c].length+")"), el("span",{class:"raw",text:raws})]));
+    const rowsBox=el("div",{class:"rows"});
+    byCat[c].sort((a,b)=>(a.ne||"").localeCompare(b.ne||"",undefined,{numeric:true})).forEach(it=>{
+      const hopTxt = it.hops===0 ? "op kabel" : it.hops+(it.hops===1?" stap":" stappen");
+      const lblCell = el("span",{class:"lbl"}, document.createTextNode(it.ne||"\u2014"));
+      if(it.ne && MODEL.dupSet && MODEL.dupSet.has(it.ne)) lblCell.appendChild(el("span",{class:"dup",text:"dubbel"}));
+      if(it.refOdd) lblCell.appendChild(el("span",{class:"refbad",text:"\u2260 "+(it.refExpected||"")}));
+      if(it.ne){
+        const cpBtn = el("button",{class:"copybtn",title:"Kopieer label",type:"button",text:"\u29C9"});
+        cpBtn.addEventListener("click",e=>{ e.stopPropagation(); navigator.clipboard.writeText(it.ne).then(()=>{ cpBtn.textContent="\u2713"; setTimeout(()=>cpBtn.textContent="\u29C9",1200); }); });
+        lblCell.appendChild(cpBtn);
+      }
+      rowsBox.appendChild(el("div",{class:"row"},[
+        lblCell,
+        el("span",{class:"hops"+(it.hops===0?" direct":""),text:hopTxt}),
+        el("span",{class:"xy",text:(it.x&&it.y)?(it.x+" \u00B7 "+it.y):""})
+      ]));
+    });
+    block.appendChild(rowsBox);
+    return block;
+  });
+}
+
+/* ---- volgnummer overzicht (tabs per kabel) ---- */
+// allItems = gecombineerde items van hoofdkabel + alle subkabels
+function numberOverview(allItems){
+  const pad = n => String(n).padStart(2,"0");
+  const wrap = el("div",{class:"numwrap"});
+  const byLade={}; allItems.forEach(it=>{ const L=(it.ref===null?"?":it.ref); (byLade[L]=byLade[L]||[]).push(it); });
+  const lades = Object.keys(byLade).sort((a,b)=> a.localeCompare(b, undefined,{numeric:true}));
+  if(!lades.length){ wrap.appendChild(el("div",{class:"empty",text:"Geen volgnummers gevonden."})); return wrap; }
+  lades.forEach(L=>{
+    const cnt={}; byLade[L].forEach(it=>{ if(it.suf!==null) cnt[it.suf]=(cnt[it.suf]||0)+1; });
+    const usedInts = Object.keys(cnt).map(s=>parseInt(s,10)).filter(n=>!isNaN(n));
+    const usedSet = new Set(usedInts);
+    const max = usedInts.length ? Math.max(...usedInts) : -1;
+    const freeInRange = []; for(let n=1;n<=max;n++){ if(!usedSet.has(n)) freeInRange.push(pad(n)); }
+    const dupCount = Object.keys(cnt).filter(s=>cnt[s]>1).length;
+    const block = el("div",{class:"ladeblock"});
+    const hdrKids = [
+      el("span",{class:"lname",text: L==="?" ? "lade onbekend" : "Lade "+L}),
+      el("span",{class:"meta3",text: usedInts.length+" gebruikt"+(max>=0?" \u00B7 hoogste "+pad(max):"")})
+    ];
+    if(freeInRange.length) hdrKids.push(el("span",{class:"nf",title:"Vrije nummers in reeks",text:"\u25A1 "+freeInRange.length+" vrij"}));
+    if(dupCount) hdrKids.push(el("span",{style:"font-family:var(--mono);font-size:11.5px;background:#FDECEA;color:#C0392B;padding:2px 9px;border-radius:6px;font-weight:600",text:"\u26A0 "+dupCount+" dubbel"}));
+    block.appendChild(el("div",{class:"ladehdr"},hdrKids));
+    const grid = el("div",{class:"numgrid"});
+    // toon 01 t/m max; vrij=groen, gebruikt=grijs, dubbel=rood
+    for(let n=1;n<=max;n++){
+      const s=pad(n); const isUsed=usedSet.has(n); const isDup=isUsed && cnt[s]>1;
+      let cls="num"; if(isDup) cls+=" dup"; else if(isUsed) cls+=" used"; else cls+=" free";
+      const label = isDup ? s+" \u00D7"+cnt[s] : s;
+      const title = isDup ? cnt[s]+"\u00D7 gebruikt: "+byLade[L].filter(it=>it.suf===s).map(it=>it.ne).join(", ")
+                          : isUsed ? byLade[L].filter(it=>it.suf===s).map(it=>it.ne).join(", ")
+                          : "vrij";
+      const chip = el("span",{class:cls,text:label}); chip.title=title;
+      grid.appendChild(chip);
+    }
+    block.appendChild(grid);
+    wrap.appendChild(block);
+  });
+  return wrap;
+}
+function cableTabs(g, vItems, allItems){
+  // allItems: gecombineerde items voor de volgnummers (hoofd+sub); default = g.items
+  const numItems = allItems || g.items;
+  const compPane = el("div",{class:"cabpane","data-pane":"comp"});
+  const blocks = typeBlocksFor(vItems);
+  if(!blocks.length) compPane.appendChild(el("div",{class:"empty",text:"Geen elementen zichtbaar met de huidige typefilters."}));
+  else blocks.forEach(b=>compPane.appendChild(b));
+  const numPane = el("div",{class:"cabpane","data-pane":"num",hidden:"hidden"});
+  numPane.appendChild(numberOverview(numItems));
+  const tComp = el("button",{class:"cabtab is-active",type:"button",text:"Componenten ("+vItems.length+")"});
+  const tNum  = el("button",{class:"cabtab",type:"button",text:"Volgnummers"});
+  function activate(which){
+    tComp.classList.toggle("is-active", which==="comp"); tNum.classList.toggle("is-active", which==="num");
+    if(which==="comp"){ compPane.removeAttribute("hidden"); numPane.setAttribute("hidden","hidden"); }
+    else { numPane.removeAttribute("hidden"); compPane.setAttribute("hidden","hidden"); }
+  }
+  tComp.addEventListener("click",()=>activate("comp")); tNum.addEventListener("click",()=>activate("num"));
+  const frag=document.createDocumentFragment();
+  frag.appendChild(el("div",{class:"cabtabs"},[tComp,tNum]));
+  frag.appendChild(compPane); frag.appendChild(numPane);
+  return frag;
+}
+
+/* ---- subkabel componenten-only (geen volgnummers tab) ---- */
+function cableTabsSubOnly(g, vItems){
+  const frag = document.createDocumentFragment();
+  const compPane = el("div",{class:"cabpane","data-pane":"comp"});
+  const blocks = typeBlocksFor(vItems);
+  if(!blocks.length) compPane.appendChild(el("div",{class:"empty",text:"Geen elementen zichtbaar met de huidige typefilters."}));
+  else blocks.forEach(b=>compPane.appendChild(b));
+  frag.appendChild(compPane);
+  return frag;
+}
+
+/* ---- flat (per losse kabel) ---- */
+function matchSearch(group){
+  if(STATE.filterErrors && !group.refHasIssue && !group.sufHasIssue) return false;
+  const q=STATE.search.trim().toLowerCase(); if(!q) return true;
+  const cab=(group.cable||"niet gekoppeld").toLowerCase();
+  if(cab.includes(q)) return true;
+  return group.items.some(it=>
+    (it.ne||"").toLowerCase().includes(q) ||
+    (it.ref||"").includes(q) ||
+    (it.suf||"").includes(q)
+  );
+}
+function sortedGroups(){
+  let e=[...MODEL.groups.entries()].filter(([k])=>k!==NONE);
+  if(STATE.sort==="count") e.sort((a,b)=> b[1].items.length-a[1].items.length || a[0].localeCompare(b[0]));
+  else e.sort((a,b)=> a[0].localeCompare(b[0], undefined,{numeric:true}));
+  return e;
+}
+function flatGroupNode(key, group){
+  const isNone=(key===NONE); const open=STATE.expanded.has(key);
+  const name=isNone?"Niet aan een kabel gekoppeld":group.cable;
+  const vItems=visibleItems(group);
+  const wrap=el("div",{class:"group"+(open?" open":"")});
+  const head=el("button",{class:"ghead",type:"button","aria-expanded":String(open),
+    onClick:()=>{ open?STATE.expanded.delete(key):STATE.expanded.add(key); renderList(); }},[
+    el("span",{class:"caret","aria-hidden":"true",text:"\u25B6"}),
+    el("div",{class:"gmain"},[
+      el("div",{class:"gtitle"},[document.createTextNode(name), el("span",{class:"total",text:vItems.length+(vItems.length===1?" element":" elementen")}), (group.refHasIssue?el("span",{class:"refwarn",text:"labelnr \u2260"}):null), (group.sufHasIssue?el("span",{class:"refwarn",text:"dubbel nr"}):null)]),
+      compositionBar(group.counts,"bar")
+    ]),
+    countBadges(group.counts)
+  ]);
+  const body=el("div",{class:"gbody"});
+  if(open){
+    if(isNone){ const b=typeBlocksFor(vItems); if(!b.length) body.appendChild(el("div",{class:"empty",text:"Geen elementen zichtbaar met de huidige typefilters."})); else b.forEach(x=>body.appendChild(x)); }
+    else body.appendChild(cableTabs(group, vItems));
+  }
+  wrap.appendChild(head); wrap.appendChild(body); return wrap;
+}
+
+/* ---- main (per hoofdkabel) ---- */
+function sortChildKeys(keys){ return keys.slice().sort((a,b)=> a.slice(-2).localeCompare(b.slice(-2)) || a.localeCompare(b)); }
+function matchSearchMain(M){
+  if(STATE.filterErrors){
+    const hasErr = M.cableKeys.some(ck=>{ const g=MODEL.groups.get(ck); return g.refHasIssue||g.sufHasIssue; });
+    if(!hasErr) return false;
+  }
+  const q=STATE.search.trim().toLowerCase(); if(!q) return true;
+  if((M.mainKey+"00").toLowerCase().includes(q) || M.mainKey.toLowerCase().includes(q)) return true;
+  return M.cableKeys.some(ck=> ck.toLowerCase().includes(q) || MODEL.groups.get(ck).items.some(it=>
+    (it.ne||"").toLowerCase().includes(q) ||
+    (it.ref||"").includes(q) ||
+    (it.suf||"").includes(q)
+  ));
+}
+function mainVisibleCount(M){ return M.cableKeys.reduce((s,ck)=> s+visibleItems(MODEL.groups.get(ck)).length, 0); }
+function sortedMains(){
+  let e=[...MODEL.mains.entries()];
+  if(STATE.sort==="count") e.sort((a,b)=> b[1].total-a[1].total || a[0].localeCompare(b[0]));
+  else e.sort((a,b)=> a[0].localeCompare(b[0], undefined,{numeric:true}));
+  return e;
+}
+function cableBlock(ck, g, allGroupItems){
+  // allGroupItems: gecombineerde items hoofd+subkabels, enkel voor de hoofdkabel-volgnummers
+  const isHoofd = ck.slice(-2)==="00";
+  const vItems = visibleItems(g);
+  const block = el("div",{class:"cableblock "+(isHoofd?"hoofd":"sub")});
+  const cbKids=[
+    el("span",{class:"cid",text:ck}),
+    el("span",{class:"tag "+(isHoofd?"h":"s"),text:isHoofd?"Hoofdkabel":"Subkabel"}),
+    el("span",{class:"cnt",text:vItems.length+(vItems.length===1?" element":" elementen")}),
+    compositionBar(g.counts,"cbbar")
+  ];
+  if(g.refHasIssue) cbKids.splice(2,0, el("span",{class:"refwarn",text:"labelnr \u2260"}));
+  if(g.sufHasIssue) cbKids.splice(2,0, el("span",{class:"refwarn",text:"dubbel nr"}));
+  block.appendChild(el("div",{class:"cbhead"}, cbKids));
+  if(isHoofd){
+    // Hoofdkabel: toon volgnummers-tab met gecombineerde items (hoofd + subkabels)
+    block.appendChild(cableTabs(g, vItems, allGroupItems || g.items));
+  } else {
+    // Subkabel: enkel componentenlijst, geen volgnummers-tab
+    block.appendChild(cableTabsSubOnly(g, vItems));
+  }
+  return block;
+}
+function mainGroupNode(mainKey, M){
+  const open=STATE.expanded.has(mainKey);
+  const childKeys=sortChildKeys(M.cableKeys);
+  const rolled={}; let vis=0;
+  childKeys.forEach(ck=> visibleItems(MODEL.groups.get(ck)).forEach(it=>{ rolled[it.cat]=(rolled[it.cat]||0)+1; vis++; }));
+  const hoofdId = mainKey+"00";
+  const nSub = childKeys.filter(c=>c.slice(-2)!=="00").length;
+  const hasErr = M.cableKeys.some(ck=>{ const g=MODEL.groups.get(ck); return g.refHasIssue||g.sufHasIssue; });
+  const wrap=el("div",{class:"group"+(open?" open":"")+(hasErr?" has-err":"")});
+  const kType = KABEL_TYPE_MAP[hoofdId] || null;
+  const titleKids=[document.createTextNode(hoofdId)];
+  if(kType) titleKids.push(el("span",{class:"ktype ktype-"+(kType==="192V"?"192":"96"),text:kType}));
+  if(hasErr) titleKids.push(el("span",{class:"refwarn",text:"\u26A0 fout"}));
+  const head=el("button",{class:"ghead",type:"button","aria-expanded":String(open),
+    onClick:()=>{ open?STATE.expanded.delete(mainKey):STATE.expanded.add(mainKey); renderList(); }},[
+    el("span",{class:"caret","aria-hidden":"true",text:"\u25B6"}),
+    el("div",{class:"gmain"},[el("div",{class:"gtitle"},titleKids), compositionBar(rolled,"bar")]),
+    countBadges(rolled)
+  ]);
+  const body=el("div",{class:"gbody"});
+  if(open){
+    // Combineer ALLE items van hoofd + subkabels in één gecombineerde componentenweergave
+    const allGroupItems = childKeys.reduce((acc,ck)=>{ MODEL.groups.get(ck).items.forEach(it=>acc.push(it)); return acc; },[]);
+    const allVisible = allGroupItems.filter(it=> STATE.activeTypes.has(it.cat));
+    // Componenten tab (gecombineerd) + Volgnummers tab (gecombineerd)
+    body.appendChild(cableTabs({items:allGroupItems, cable:hoofdId}, allVisible, allGroupItems));
+  }
+  wrap.appendChild(head); wrap.appendChild(body); return wrap;
+}
+
+/* ---- summary / legend / list ---- */
+const ICON_WARN = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>';
+const ICON_OK = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
+function renderValidation(){
+  const w=document.getElementById("validation"); w.innerHTML=""; w.dataset.collapsed="0";
+  let issues=0;
+
+  // 1) duplicate labels (error)
+  if(MODEL.dupLabels.length){
+    issues++;
+    const box=el("div",{class:"valid err"});
+    box.appendChild(el("span",{class:"ic",html:ICON_WARN}));
+    const body=el("div",{});
+    body.appendChild(el("div",{},[el("b",{text:MODEL.dupLabels.length+(MODEL.dupLabels.length===1?" dubbel label":" dubbele labels")}), document.createTextNode(" \u2014 elke component moet een uniek label hebben.")]));
+    const ul=el("ul",{class:"duplist"});
+    MODEL.dupLabels.slice(0,80).forEach(d=>{
+      const where=d.where.map(o=>(o.cable||"niet aan kabel")+" ("+meta(catOf(o.ot)).label+")").join(", ");
+      ul.appendChild(el("li",{},[el("span",{class:"lab",text:d.label}), document.createTextNode("  "+d.count+"\u00D7  \u2014  "), el("span",{class:"meta2",text:where})]));
+    });
+    body.appendChild(ul);
+    if(MODEL.dupLabels.length>80) body.appendChild(el("div",{class:"meta2",text:"\u2026 en "+(MODEL.dupLabels.length-80)+" meer"}));
+    box.appendChild(body); w.appendChild(box);
+  }
+
+  // 2) ODF/FID kabeloverzicht + label-number inconsistency
+  {
+    // Bouw volledig kabeloverzicht: alle kabels uit POP_COMPACT_MAP + MODEL.mains
+    // Voor elke kabel: verwacht ODF (uit POP_COMPACT_MAP), fout = refIssue aanwezig
+    const issueMap = new Map(MODEL.refIssues.map(d=>[d.cable.replace(/-\d{2}$/,""), d]));
+    // Verzamel alle kabels: hoofdkabels uit MODEL.mains
+    const allMainKeys = [...MODEL.mains.keys()].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}));
+    // ODF lookup: strip trailing -XX van cable key (mainKey = zonder -00)
+    function odfFor(mainKey){ const base="GENT-"+mainKey; return POP_COMPACT_MAP[base] || null; }
+    // RefIssue per hoofdkabel: zoek op alle subkabelids
+    function issueForMain(mainKey){
+      const M = MODEL.mains.get(mainKey);
+      if(!M) return null;
+      for(const ck of M.cableKeys){ const issue = MODEL.refIssues.find(d=>d.cable===ck); if(issue) return issue; }
+      // ook checken op aggregaat: zijn er afwijkende refs over subkabels heen?
+      return MODEL.refIssues.find(d=>{ const base=d.cable.replace(/-\d{2}$/,""); return base==="GENT-"+mainKey; }) || null;
+    }
+    // Kabels met fouten
+    const kabelsMetFout = new Set(MODEL.refIssues.map(d=>{ const m=d.cable.match(/GENT-(K\d+)/); return m?m[1]:null; }).filter(Boolean));
+    const nFout = kabelsMetFout.size;
+
+    if(MODEL.refIssues.length) issues++;
+
+    const box=el("div",{class:"valid "+(MODEL.refIssues.length?"warn2":"ok")});
+    box.appendChild(el("span",{class:"ic",html:MODEL.refIssues.length?ICON_WARN:ICON_OK}));
+    const body=el("div",{style:"flex:1"});
+
+    // Header
+    if(MODEL.refIssues.length){
+      body.appendChild(el("div",{},[el("b",{text:nFout+(nFout===1?" kabel":" kabels")+" met afwijkend ODF-nummer"}),
+        document.createTextNode(" \u2014 3de en 4de laatste cijfer bepaalt het ODF-nummer.")]));
+    } else {
+      body.appendChild(el("div",{},[el("b",{text:"Alle ODF-nummers correct"}),
+        document.createTextNode(" \u2014 3de en 4de laatste cijfer klopt voor elke kabel.")]));
+    }
+
+    // Toggle knop
+    const CHEV = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>';
+    const toggleBtn = el("button",{class:"odf-toggle",type:"button"});
+    toggleBtn.innerHTML = "Kabeloverzicht "+CHEV;
+    body.appendChild(toggleBtn);
+
+    // Tabel (standaard ingeklapt)
+    const table = el("div",{class:"odf-table",hidden:"hidden"});
+
+    // Data opbouwen — enkel hoofdkabels (eindigen op 00)
+    const hoofdKabelKeys = [...MODEL.groups.keys()]
+      .filter(k=>k!==NONE && k!=="" && k.endsWith("00"))
+      .map(k=>{ const m=k.match(/GENT-(K\d+)/); return m?m[1]:null; }).filter(Boolean);
+    const baseKeys = new Set(hoofdKabelKeys);
+    const rows = [];
+    hoofdKabelKeys.sort((a,b)=>a.localeCompare(b,undefined,{numeric:true})).forEach(bk=>{
+      const fullBase = "GENT-"+bk;
+      const mainKey = fullBase.slice(0,-2); // strip "00"
+      // Combineer items van hoofd + alle subkabels
+      const items = [];
+      MODEL.groups.forEach((g,ck)=>{ if(ck.startsWith(mainKey)) g.items.forEach(i=>items.push(i)); });
+      const expectedOdf = POP_COMPACT_MAP[fullBase] || null;
+      const refs = [...new Set(items.map(i=>i.ref).filter(r=>r!==null))].sort();
+      // Fout als één van de kabels onder deze hoofdkabel een refIssue heeft
+      const hasError = MODEL.refIssues.some(d=>d.cable.startsWith(mainKey));
+      rows.push({bk, fullBase, expectedOdf, refs, hasError, items});
+    });
+    Object.keys(POP_COMPACT_MAP).sort().forEach(pk=>{
+      const bk = pk.replace("GENT-","");
+      if(!baseKeys.has(bk)) rows.push({bk, fullBase:pk, expectedOdf:POP_COMPACT_MAP[pk], refs:[], hasError:false, items:[], notInData:true});
+    });
+    rows.sort((a,b)=>a.bk.localeCompare(b.bk,undefined,{numeric:true}));
+
+    // Header rij
+    const hdr = el("div",{class:"odf-row odf-hdr"});
+    ["Kabel","ODF","Actueel","FID",""].forEach(t=> hdr.appendChild(el("span",{text:t})));
+    table.appendChild(hdr);
+
+    rows.forEach(({fullBase,expectedOdf,refs,hasError,items,notInData})=>{
+      const row = el("div",{class:"odf-row"+(hasError?" odf-err":"")});
+
+      // Kabel — strip prefix voor leesbaarheid, toon suffix klein
+      const kShort = fullBase.replace("GENT-","");
+      const kt = KABEL_TYPE_MAP[fullBase] || null;
+      const c1 = el("span",{class:"odf-c1"});
+      c1.appendChild(el("span",{text:"GENT-"}));
+      c1.appendChild(el("b",{text:kShort}));
+      if(kt) c1.appendChild(el("span",{class:"ktype ktype-"+(kt==="192V"?"192":"96"),style:"margin-left:6px",text:kt}));
+      c1.style.color = notInData ? "var(--ink-3)" : "";
+      row.appendChild(c1);
+
+      // ODF verwacht
+      row.appendChild(el("span",{class:"odf-badge",text:expectedOdf||"—",style:notInData?"opacity:.45":""}));
+
+      // ODF actueel
+      const c3 = el("span",{class:"odf-c3"});
+      if(!refs.length){ c3.appendChild(el("span",{style:"color:var(--ink-3)",text:"—"})); }
+      else refs.forEach(r=>{
+        const bad = expectedOdf && r!==expectedOdf;
+        c3.appendChild(el("span",{class:"odf-chip"+(bad?" odf-chip-bad":""),text:r}));
+      });
+      row.appendChild(c3);
+
+      // FID min–max
+      const sufs = [...new Set(items.map(i=>i.suf).filter(s=>s!==null))].sort();
+      const fidText = sufs.length ? (sufs[0]===sufs[sufs.length-1] ? sufs[0] : sufs[0]+" \u2013 "+sufs[sufs.length-1]) : "—";
+      row.appendChild(el("span",{class:"odf-fid",text:fidText}));
+
+      // Status dot + label
+      const statusCls = notInData?"absent":hasError?"bad":"ok";
+      const statusTxt = notInData?"geen data":hasError?"afwijkend":"ok";
+      const c5 = el("span",{class:"odf-c5 "+statusCls});
+      c5.appendChild(el("span",{class:"odf-dot "+statusCls}));
+      c5.appendChild(document.createTextNode(" "+statusTxt));
+      row.appendChild(c5);
+
+      table.appendChild(row);
+    });
+    body.appendChild(table);
+
+    // Toggle
+    toggleBtn.addEventListener("click",()=>{
+      const open = !table.hasAttribute("hidden");
+      if(open){ table.setAttribute("hidden","hidden"); toggleBtn.classList.remove("open"); }
+      else { table.removeAttribute("hidden"); toggleBtn.classList.add("open"); }
+    });
+
+    box.appendChild(body); w.appendChild(box);
+  }
+
+  // 3) duplicate volgnummer on the same lade (warning)
+  if(MODEL.sufIssues.length){
+    issues++;
+    const box=el("div",{class:"valid warn2"});
+    box.appendChild(el("span",{class:"ic",html:ICON_WARN}));
+    const body=el("div",{});
+    body.appendChild(el("div",{},[el("b",{text:MODEL.sufIssues.length+(MODEL.sufIssues.length===1?" kabel":" kabels")+" met een dubbel volgnummer"}), document.createTextNode(" \u2014 de laatste 2 cijfers moeten uniek zijn binnen één lade.")]));
+    const ul=el("ul",{class:"duplist"});
+    MODEL.sufIssues.slice(0,80).forEach(d=>{
+      const det=d.dups.map(x=>"lade "+x.lade+" nr "+x.suf+" ("+x.count+"\u00D7)").join("; ");
+      ul.appendChild(el("li",{},[el("span",{class:"lab",text:d.cable}), document.createTextNode("  \u2014  "), el("span",{class:"meta2",text:det})]));
+    });
+    body.appendChild(ul);
+    box.appendChild(body); w.appendChild(box);
+  }
+
+  // 4) empty labels (warning)
+  if(MODEL.emptyLabels){
+    issues++;
+    const box=el("div",{class:"valid warn2"});
+    box.appendChild(el("span",{class:"ic",html:ICON_WARN}));
+    box.appendChild(el("div",{},[el("b",{text:String(MODEL.emptyLabels)}), document.createTextNode(MODEL.emptyLabels===1?" element zonder label.":" elementen zonder label.")]));
+    w.appendChild(box);
+  }
+
+  // all clear
+  if(!issues){
+    const box=el("div",{class:"valid ok"});
+    box.appendChild(el("span",{class:"ic",html:ICON_OK}));
+    box.appendChild(el("div",{},[document.createTextNode("Alle "), el("b",{text:String(MODEL.distinctLabels)}), document.createTextNode(" labels zijn uniek en per kabel consistent.")]));
+    w.appendChild(box);
+  }
+  // Validatie-sectie inklapbaar maken
+  const valToggle = el("button",{class:"val-collapse",type:"button",id:"valToggle"});
+  valToggle.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m18 15-6-6-6 6"/></svg> Verberg validatie';
+  valToggle.addEventListener("click",()=>{
+    const collapsed = w.dataset.collapsed==="1";
+    w.dataset.collapsed = collapsed?"0":"1";
+    [...w.children].forEach((c,i)=>{ if(i>0) c.style.display = collapsed?"":"none"; });
+    valToggle.innerHTML = collapsed
+      ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m18 15-6-6-6 6"/></svg> Verberg validatie'
+      : '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg> Toon validatie ('+(issues||"ok")+')';
+  });
+  w.insertBefore(valToggle, w.firstChild);
+  // Auto-inklappen als geen fouten
+  if(!issues){ valToggle.click(); }
+}
+function renderSummary(){
+  const w=document.getElementById("summary"); w.innerHTML="";
+  const none=MODEL.groups.get(NONE);
+  const stats=[
+    {n:MODEL.mainCount, l:"hoofdkabels"},
+    {n:MODEL.cableCount, l:"kabels totaal"},
+    {n:MODEL.total, l:"netwerkelementen"},
+  ];
+  if(none) stats.push({n:none.items.length, l:"niet aan kabel", warn:true});
+  stats.forEach(s=> w.appendChild(el("div",{class:"stat"+(s.warn?" warn":"")},[el("div",{class:"n",text:String(s.n)}), el("div",{class:"l",text:s.l})])));
+}
+function renderLegend(){
+  const w=document.getElementById("legend"); w.innerHTML="";
+  present().forEach(ot=>{
+    const m=meta(ot); const on=STATE.activeTypes.has(ot);
+    w.appendChild(el("button",{class:"chip t-"+m.key,"aria-pressed":String(on),type:"button",
+      onClick:()=>{ on?STATE.activeTypes.delete(ot):STATE.activeTypes.add(ot); renderLegend(); renderList(); }},[
+      el("span",{class:"dot"}), el("span",{},m.label), el("span",{class:"ct",text:"("+MODEL.typeTotals[ot]+")"})
+    ]));
+  });
+}
+function renderList(){
+  const list=document.getElementById("list"); list.innerHTML="";
+  let any=false;
+  if(MODE==="main"){
+    sortedMains().filter(([,M])=>matchSearchMain(M)&&mainVisibleCount(M)>0).forEach(([k,M])=>{ list.appendChild(mainGroupNode(k,M)); any=true; });
+  } else {
+    sortedGroups().filter(([,g])=>matchSearch(g)&&visibleItems(g).length>0).forEach(([k,g])=>{ list.appendChild(flatGroupNode(k,g)); any=true; });
+  }
+  if(!any) list.appendChild(el("div",{class:"group"},[el("div",{class:"empty",text:"Niets gevonden voor deze zoekopdracht of filters."})]));
+  const none=MODEL.groups.get(NONE);
+  if(none && matchSearch(none) && visibleItems(none).length>0) list.appendChild(flatGroupNode(NONE, none));
+  document.getElementById("toggleAll").textContent = STATE.expanded.size>0 ? "Alles dichtklappen" : "Alles openklappen";
+}
+function renderAll(){ renderValidation(); renderSummary(); renderLegend(); renderList(); }
+
+/* ---- export ---- */
+function exportCSV(){
+  const C=MODEL.C;
+  const head=["Hoofdkabel","Referentie","Kabel","Kabeltype","Netwerk Element","ObjectType","Type","Hops_naar_kabel","X","Y","ID (GUI)","Parent_ID (GUI)"];
+  const out=[head.join(";")];
+  const cell=v=>{ v=(v==null?"":String(v)); return /[;"\n]/.test(v) ? '"'+v.replace(/"/g,'""')+'"' : v; };
+  const mains=[...MODEL.mains.entries()].sort((a,b)=>a[0].localeCompare(b[0],undefined,{numeric:true}));
+  mains.forEach(([mk,M])=>{
+    sortChildKeys(M.cableKeys).forEach(ck=>{
+      const isH=ck.slice(-2)==="00";
+      MODEL.groups.get(ck).items.slice()
+        .sort((a,b)=> typeRank(a.cat)-typeRank(b.cat) || (a.ne||"").localeCompare(b.ne||"",undefined,{numeric:true}))
+        .forEach(it=>{ const r=it.row;
+          out.push([mk+"00", mk.slice(-2), ck, isH?"hoofdkabel":"subkabel", it.ne, it.ot, meta(it.cat).label, it.hops, it.x, it.y, r[C.id], r[C.pid]].map(cell).join(";"));
+        });
+    });
+  });
+  const none=MODEL.groups.get(NONE);
+  if(none) none.items.forEach(it=>{ const r=it.row;
+    out.push(["(niet gekoppeld)","","","", it.ne, it.ot, meta(it.cat).label, "", it.x, it.y, r[C.id], r[C.pid]].map(cell).join(";")); });
+  const blob=new Blob(["\uFEFF"+out.join("\r\n")], {type:"text/csv;charset=utf-8"});
+  const a=el("a",{href:URL.createObjectURL(blob), download:"kabelgroepering.csv"});
+  document.body.appendChild(a); a.click(); a.remove();
+}
+
+/* ---- load / init ---- */
+function load(text){
+  const model=buildModel(parseCSV(text));
+  const errBox=document.getElementById("err");
+  if(model.error){ errBox.style.display="block"; errBox.textContent=model.error; return; }
+  errBox.style.display="none";
+  MODEL=model;
+  STATE.activeTypes=new Set(Object.keys(MODEL.typeTotals));
+  STATE.expanded=new Set();
+  STATE.filterErrors=false;
+  STATE.sort="id";
+  STATE.search="";
+  document.getElementById("search").value="";
+  document.getElementById("level").value="main"; MODE="main";
+  document.getElementById("sort").value="id";
+  renderAll(); if(typeof updateFilterBtn==="function") updateFilterBtn();
+  const C=MODEL.C;
+  document.getElementById("note").innerHTML =
+    "Herkende kolommen \u2014 element: <code>"+(C.ne||"?")+"</code>, sleutel: <code>"+C.id+
+    "</code>, parent: <code>"+C.pid+"</code>, type: <code>"+(C.ot||"?")+"</code>, kabel: <code>"+C.gvk+
+    "</code>. Hoofdkabel = code minus de laatste 2 cijfers; \u201cop kabel\u201d = de kabel staat rechtstreeks op die rij, anders geërfd via Parent_ID.";
+}
+
+document.getElementById("search").addEventListener("input", e=>{ STATE.search=e.target.value; renderList(); });
+document.getElementById("level").addEventListener("change", e=>{ MODE=e.target.value; STATE.expanded.clear(); renderList(); });
+document.getElementById("sort").addEventListener("change", e=>{ STATE.sort=e.target.value; renderList(); });
+document.getElementById("toggleAll").addEventListener("click", ()=>{
+  if(STATE.expanded.size>0){ STATE.expanded.clear(); }
+  else if(MODE==="main"){
+    sortedMains().forEach(([k,M])=>{ if(matchSearchMain(M)&&mainVisibleCount(M)>0) STATE.expanded.add(k); });
+    const none=MODEL.groups.get(NONE); if(none&&matchSearch(none)&&visibleItems(none).length>0) STATE.expanded.add(NONE);
+  } else {
+    sortedGroups().forEach(([k,g])=>{ if(matchSearch(g)&&visibleItems(g).length>0) STATE.expanded.add(k); });
+    const none=MODEL.groups.get(NONE); if(none&&matchSearch(none)&&visibleItems(none).length>0) STATE.expanded.add(NONE);
+  }
+  renderList();
+});
+document.getElementById("loadBtn").addEventListener("click", ()=> document.getElementById("file").click());
+document.getElementById("file").addEventListener("change", e=>{ const f=e.target.files[0]; if(!f) return;
+  const rdr=new FileReader(); rdr.onload=()=>load(String(rdr.result)); rdr.readAsText(f,"utf-8"); e.target.value=""; });
+document.getElementById("exportBtn").addEventListener("click", exportCSV);
+
+// Foutfilter knop
+const filterErrorsBtn = document.getElementById("filterErrors");
+function updateFilterBtn(){
+  const hasFout = MODEL && (MODEL.refIssues.length>0||MODEL.sufIssues.length>0||MODEL.dupLabels.length>0);
+  filterErrorsBtn.style.display = hasFout ? "" : "none";
+  filterErrorsBtn.textContent = STATE.filterErrors ? "Alle kabels" : "\u26A0 Alleen fouten";
+  if(STATE.filterErrors) filterErrorsBtn.style.background="var(--accent-wash)";
+  else filterErrorsBtn.style.background="";
+}
+filterErrorsBtn.addEventListener("click",()=>{ STATE.filterErrors=!STATE.filterErrors; STATE.expanded.clear(); updateFilterBtn(); renderList(); });
+
+// Export fouten-CSV
+const exportErrBtn = el("button",{class:"btn ghost",type:"button",text:"Download fouten-CSV"});
+document.getElementById("exportBtn").insertAdjacentElement("afterend", exportErrBtn);
+exportErrBtn.addEventListener("click",()=>{
+  const errNes = new Set([...MODEL.refOddSet,...MODEL.sufOddSet,...MODEL.dupSet]);
+  if(!errNes.size){ alert("Geen labelfouten gevonden."); return; }
+  const C=MODEL.C;
+  const cell=v=>{ v=(v==null?"":String(v)); return /[;"\n]/.test(v) ? '"'+v.replace(/"/g,'""')+'"' : v; };
+  const hdr=["Hoofdkabel","ODF-ref","Kabel","Type","Netwerk Element","ObjectType","Categorie","Hops","X","Y","ID","Parent_ID","Fouttype"];
+  const out=[hdr.join(";")];
+  MODEL.mains.forEach((_,mk)=>{ const M=MODEL.mains.get(mk);
+    sortChildKeys(M.cableKeys).forEach(ck=>{
+      const isH=ck.slice(-2)==="00";
+      MODEL.groups.get(ck).items.forEach(it=>{
+        if(!errNes.has(it.ne)) return;
+        const r=it.row;
+        const fout=[MODEL.dupSet.has(it.ne)?"dubbel label":"", it.refOdd?"ODF afwijkend":"", (MODEL.sufOddSet.has(it.ne)&&!it.refOdd)?"dubbel volgnr":""].filter(Boolean).join(", ");
+        out.push([mk+"00",mk.slice(-2),ck,isH?"hoofdkabel":"subkabel",it.ne,it.ot,meta(it.cat).label,it.hops,it.x,it.y,r[C.id],r[C.pid],fout].map(cell).join(";"));
+      });
+    });
+  });
+  const blob=new Blob(["\uFEFF"+out.join("\r\n")],{type:"text/csv;charset=utf-8"});
+  const a=el("a",{href:URL.createObjectURL(blob),download:"labelfouten.csv"});
+  document.body.appendChild(a); a.click(); a.remove();
+});
+
+/* ---- POP COMPACT xlsx inladen ---- */
+function loadPopCompact(file){
+  const rdr = new FileReader();
+  rdr.onload = e => {
+    try {
+      const wb = XLSX.read(e.target.result, {type:"array"});
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      // Robuuste aanpak: werk cel-voor-cel via de sheet ref zodat merged cells correct gelezen worden
+      const newMap = {};
+      const newTypeMap = {};
+      let loaded = 0;
+      const range = XLSX.utils.decode_range(ws["!ref"] || "A1:F1");
+      let lastCableVal = "";
+      for(let R = range.s.r; R <= range.e.r; R++){
+        // Kolom B = index 1, Kolom F = index 5
+        const cellB = ws[XLSX.utils.encode_cell({r:R, c:1})];
+        const cellF = ws[XLSX.utils.encode_cell({r:R, c:5})];
+        const colB = cellB ? String(cellB.v||"").trim() : "";
+        const colF = cellF ? String(cellF.v||"").trim() : "";
+        // Kolom F heeft enkel waarde bij eerste rij van kabelblok (merged cell)
+        // Herkenning is volledig projectonafhankelijk: het enige vaste onderdeel van het
+        // kabelformaat is "-K" gevolgd door cijfers, ongeacht wat het projectprefix zelf is
+        // (letters, cijfers, underscores, extra streepjes: GENT-K…, EDEEM-K…, WP02-K…, DE-PANNE-K…, …)
+        if(/^\S+-K\d+/.test(colF)) lastCableVal = colF;
+        if(!/^\S+-K\d+/.test(lastCableVal)) continue;
+        if(!colB || !colB.match(/^\d/)) continue; // sla header/lege rijen over
+        const cable = lastCableVal.split(" - ")[0].trim();
+        if(cable in newMap) continue; // al verwerkt
+        // Kabeltype: zoek naar 96V of 192V in de kolom F waarde
+        const typeMatch = lastCableVal.match(/(\d+V)/);
+        const kabelType = typeMatch ? typeMatch[1] : "";
+        // Cijfer 4+5: verwijder alles behalve cijfers, neem positie 3+4
+        const digits = colB.replace(/[^0-9]/g,"");
+        if(digits.length >= 5){
+          newMap[cable] = digits[3] + digits[4];
+          if(kabelType) newTypeMap[cable] = kabelType;
+          loaded++;
+        }
+      }
+      if(!loaded){ alert("Geen kabelgegevens gevonden in dit bestand. Controleer of het het juiste POP COMPACT schema is (kolom B = RACK-LADE-POSITIE, kolom F = KABEL)."); return; }
+      POP_COMPACT_MAP = newMap;
+      POP_COMPACT_MAP = newMap;
+      KABEL_TYPE_MAP = newTypeMap;
+      console.log("POP geladen — ODF-map:", loaded, "kabels, type-map keys:", Object.keys(newTypeMap).length, "voorbeeld:", Object.entries(newTypeMap).slice(0,3));
+      if(MODEL) renderAll();
+      const popBtn = document.getElementById("loadPopBtn");
+      const orig = popBtn.textContent;
+      popBtn.textContent = "✓ " + loaded + " kabels geladen";
+      popBtn.style.background = "var(--accent-wash)";
+      popBtn.style.color = "var(--accent-ink)";
+      setTimeout(()=>{ popBtn.textContent = orig; popBtn.style.background=""; popBtn.style.color=""; }, 3000);
+    } catch(err) {
+      alert("Fout bij inladen POP COMPACT: " + err.message);
+    }
+  };
+  rdr.readAsArrayBuffer(file);
+}
+
+document.getElementById("refreshBtn").addEventListener("click", ()=>{
+  if(!confirm("Alle geladen data wissen? De pagina wordt volledig gereset.")) return;
+  POP_COMPACT_MAP = Object.assign({}, INITIAL_POP_COMPACT_MAP);
+  KABEL_TYPE_MAP = Object.assign({}, INITIAL_KABEL_TYPE_MAP);
+  MODEL = null;
+  STATE.search=""; STATE.sort="id"; STATE.filterErrors=false;
+  STATE.activeTypes=new Set(); STATE.expanded=new Set();
+  document.getElementById("search").value="";
+  document.getElementById("level").value="main"; MODE="main";
+  document.getElementById("sort").value="id";
+  document.getElementById("validation").innerHTML="";
+  document.getElementById("summary").innerHTML="";
+  document.getElementById("legend").innerHTML="";
+  document.getElementById("list").innerHTML="";
+  document.getElementById("note").innerHTML="";
+  document.getElementById("err").style.display="none";
+  filterErrorsBtn.style.display="none";
+  // Reset load bar hint
+  const hint = document.getElementById("loadHint");
+  if(hint) hint.textContent="Laad een object relations CSV om te starten, of werk verder met de ingebouwde dataset.";
+});
+document.getElementById("loadPopBtn").addEventListener("click", ()=> document.getElementById("popFile").click());
+document.getElementById("popFile").addEventListener("change", e=>{ const f=e.target.files[0]; if(!f) return; loadPopCompact(f); e.target.value=""; });
+
+load(RAW_CSV);
+</script>
+</body>
+</html>
