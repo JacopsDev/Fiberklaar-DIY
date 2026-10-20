@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>The Dagmaister</title>
+<script src="assets/theme.js"></script>
+<link rel="stylesheet" href="assets/topbar.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -790,11 +792,51 @@ tr.md-mdblock-flash>td{animation:mdRowFlash 1.9s ease;}
 #cltab-root .fsu-actions .btn.fsu-pri{background:var(--fsu); color:#fff; border-color:var(--fsu)}
 #cltab-root .fsu-actions .btn.fsu-pri:hover{background:var(--fsu-ink); border-color:var(--fsu-ink)}
 </style>
+<link rel="icon" href="assets/favicon.ico" sizes="any">
+<link href="assets/fonts/fonts.css" rel="stylesheet">
+<style id="jacops-brand">
+/* JACOPS brandguide — soft restyle (kleur + typografie, geen layoutwijzigingen) */
+:root{
+  --bg:#f6f6f6;--s2:#efefee;--s3:#e4e4e3;--b:#e2e2e1;--b2:#c6c6c5;
+  --tx:#3b3b3b;--t2:#5f5f5e;--t3:#8f8f8e;
+  --blue:#ff0000;--bbg:#fff0f0;--bt:#d10000;
+  --paper:#f6f6f6;--panel-2:#f9f9f9;
+  --ink:#3b3b3b;--ink-2:#5f5f5e;--ink-3:#8f8f8e;
+  --line:#e2e2e1;--line-strong:#c6c6c5;
+  --accent:#ff0000;--accent-ink:#d10000;--accent-wash:#fff0f0;
+  --sans:Calibri,Carlito,'Segoe UI',system-ui,-apple-system,Arial,sans-serif;
+}
+body.dark{
+  --bg:#1f1f1f;--sur:#2a2a2a;--s2:#3b3b3b;--s3:#4a4a4a;--b:#3b3b3b;--b2:#575757;
+  --tx:#f3f3f3;--t2:#b8b8b7;--t3:#8c8c8b;
+  --blue:#ff3333;--bbg:#4a1414;--bt:#ff8a8a;
+}
+body{font-family:Calibri,Carlito,'Segoe UI',system-ui,-apple-system,Arial,sans-serif;}
+.nav-tab.cat-blue,.hlp-tip{border-color:#ffc9c9;}
+.nav-tab.cat-blue:hover,.dz-cat-blue:hover{background:#ffe0e0;}
+#cltab-root{background:var(--paper);}
+body.dark{--paper:#1a1a1a;--panel:#242424;--panel-2:#2a2a2a;--ink:#f2f2f2;--ink-2:#b5b5b4;--ink-3:#8c8c8b;--line:#3b3b3b;--line-strong:#4f4f4f;--accent:#ff3333;--accent-ink:#ff7070;--accent-wash:#3a1414;--shadow:0 1px 2px rgba(0,0,0,.3);}
+body.dark #cltab-root .group.has-err{background:#2a1c1c;}
+body.dark #cltab-root .odf-err{background:#2e1c1c !important;}
+body.dark #cltab-root .odf-err:hover{background:#3a1f1f !important;}
+body.dark #cltab-root .odf-chip,body.dark #cltab-root .num.used,body.dark #cltab-root .tag.s{background:#383838;color:#d8d8d7;}
+body.dark #cltab-root .num.free{background:#1d3327;color:#6fd39c;}
+body.dark #cltab-root .num.dup,body.dark #cltab-root .odf-chip-bad{background:#3a1414;color:#ff7070;}
+body.dark #cltab-root .valid.warn2,body.dark #cltab-root .refwarn{background:#33260f;color:#e0c48a;border-color:#5a4520;}
+body.dark #cltab-root .valid.err,body.dark #cltab-root #err{background:#3a1f14;color:#f0a88a;border-color:#5a2e1e;}
+body.dark #cltab-root .valid.ok{background:#16291f;color:#8fd1ae;border-color:#24402f;}
+
+#cltab-root .head h1{font-family:'Bebas Neue','Bebas Neue Pro',Impact,'Arial Narrow',sans-serif;font-weight:400;font-size:26px;letter-spacing:.02em;line-height:1.05;}
+header.lb-top{height:59px;display:block;padding:0;gap:0;}
+header.lb-top .lb-wrap{flex-wrap:nowrap;height:58px;}
+header.lb-top .hcrumb{flex:1;min-width:0;}
+.wrap{height:calc(100vh - 59px);}
+#dark-toggle{display:none!important;}
+</style>
 </head>
 <body>
-<header>
-  <div class="logo"><svg width="15" height="15" viewBox="0 0 16 16" fill="none"><path d="M2 4h12M2 8h8M2 12h10" stroke="white" stroke-width="1.5" stroke-linecap="round"/></svg></div>
-  <h1>Lasschema Tool</h1>
+<header class="lb-top"><div class="lb-wrap">
+  <a class="lb-brand" href="index.html" title="Naar overzicht">The Dagmaister</a>
   <div class="hcrumb" id="crumb"></div>
   <div class="hright" style="display:flex;align-items:center;gap:8px;margin-left:auto">
     <button id="dark-toggle" onclick="toggleDark()" style="padding:4px 10px;font-size:11px;border:1px solid var(--b);border-radius:var(--r);background:var(--s2);color:var(--t2);cursor:pointer">Donker</button>
@@ -803,9 +845,10 @@ tr.md-mdblock-flash>td{animation:mdRowFlash 1.9s ease;}
       <svg style="position:absolute;left:8px;top:50%;transform:translateY(-50%);opacity:0.4" width="13" height="13" viewBox="0 0 16 16" fill="none"><circle cx="6" cy="6" r="4.5" stroke="var(--tx)" stroke-width="1.5"/><path d="M10 10l3 3" stroke="var(--tx)" stroke-width="1.5" stroke-linecap="round"/></svg>
     </div>
     <button id="bcl" onclick="goHome()" style="display:none">&larr; Overzicht</button>
+    <button type="button" class="lb-btn lb-theme" data-theme-toggle title="Licht / donker" aria-label="Wissel tussen licht en donker thema"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><g class="i-sun"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></g><path class="i-moon" d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
   </div>
-</header>
-<div id="search-results" style="display:none;position:fixed;top:44px;right:12px;width:480px;max-height:420px;overflow-y:auto;background:var(--sur);border:1px solid var(--b);border-radius:var(--r);box-shadow:0 4px 20px rgba(0,0,0,0.15);z-index:1000"></div>
+</div></header>
+<div id="search-results" style="display:none;position:fixed;top:60px;right:12px;width:480px;max-height:420px;overflow-y:auto;background:var(--sur);border:1px solid var(--b);border-radius:var(--r);box-shadow:0 4px 20px rgba(0,0,0,0.15);z-index:1000"></div>
 
 <div class="sync-bar" id="sync-bar">
   <span class="sync-dot dot-none" id="sync-dot"></span>
@@ -1030,12 +1073,12 @@ tr.md-mdblock-flash>td{animation:mdRowFlash 1.9s ease;}
   <header class="head">
     <span class="glyph" aria-hidden="true">
       <svg viewBox="0 0 38 38" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <rect x="1" y="1" width="36" height="36" rx="9" fill="#E0F3F5"/>
-        <circle cx="10" cy="19" r="3.1" fill="#0E8FA3"/>
-        <circle cx="28" cy="10" r="2.4" fill="#D9743A"/>
-        <circle cx="29" cy="19" r="2.4" fill="#8A5CE0"/>
-        <circle cx="28" cy="28" r="2.4" fill="#11899B"/>
-        <path d="M12.7 18.2 25.8 10.8M13 19h13M12.8 19.9 25.9 27.4" stroke="#0E8FA3" stroke-width="1.5" stroke-linecap="round"/>
+        <rect x="1" y="1" width="36" height="36" rx="9" fill="#FFF0F0"/>
+        <circle cx="10" cy="19" r="3.1" fill="#FF0000"/>
+        <circle cx="28" cy="10" r="2.4" fill="#3B3B3B"/>
+        <circle cx="29" cy="19" r="2.4" fill="#8F8F8E"/>
+        <circle cx="28" cy="28" r="2.4" fill="#D10000"/>
+        <path d="M12.7 18.2 25.8 10.8M13 19h13M12.8 19.9 25.9 27.4" stroke="#FF0000" stroke-width="1.5" stroke-linecap="round"/>
       </svg>
     </span>
     <div>

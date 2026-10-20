@@ -3,6 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <title>Opmaak façade lasschema's</title>
+<script src="assets/theme.js"></script>
+<link rel="stylesheet" href="assets/topbar.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
@@ -103,18 +105,64 @@
   .page{display:none;}
   .page.active{display:block;}
 </style>
+<link rel="icon" href="assets/favicon.ico" sizes="any">
+<link href="assets/fonts/fonts.css" rel="stylesheet">
+<style id="jacops-brand">
+/* JACOPS brandguide — soft restyle (kleur + typografie, geen layoutwijzigingen) */
+:root{
+  --blue:#ff0000;--blue-light:#fff0f0;--border:#dcdcdb;--text:#3b3b3b;--bg:#f6f6f6;
+}
+body{font-family:Calibri,Carlito,'Segoe UI',system-ui,-apple-system,Arial,sans-serif;}
+.panel h2{font-family:'Bebas Neue','Bebas Neue Pro',Impact,'Arial Narrow',sans-serif;font-weight:400;font-size:21px;letter-spacing:.03em;}
+.sub,.panel .hint,.dropzone,td.num{color:#6b6b6a;}
+button:hover{background:#d10000;}
+button.secondary:hover{background:var(--blue-light);}
+button:disabled{background:#c6c6c5;}
+.tabbtn:hover{background:#ececeb;}
+tr:nth-child(even) td{background:#fafafa;}
+html.dark{--blue:#ff3333;--blue-light:#3a1414;--border:#3b3b3b;--text:#f2f2f2;--bg:#1a1a1a;--green:#4cc38a;--amber:#e0a458;--purple:#b49cf0;color-scheme:dark;}
+html.dark .panel{background:#242424;}
+html.dark .sub,html.dark .panel .hint,html.dark .dropzone,html.dark td.num,html.dark .streets,html.dark .log,html.dark .status,html.dark .memo-note,html.dark .hhfilelist{color:#b5b5b4;}
+html.dark .log{background:#1f1f1f;}
+html.dark tr:nth-child(even) td{background:#202020;}
+html.dark th{background:#2e2e2e;color:#ff7070;}
+html.dark input,html.dark select,html.dark textarea{background:#1f1f1f;color:#f2f2f2;border-color:#3b3b3b;}
+html.dark .badge,html.dark .badge.gis{background:#1d3327;}
+html.dark .badge.warn{background:#33260f;}
+html.dark .badge.hh{background:#2a2140;}
+html.dark .badge.mem{background:#3a1414;}
+html.dark code{background:#2e2e2e;}
+html.dark .tabbtn{background:#2e2e2e;color:#b5b5b4;}
+html.dark .tabbtn:hover{background:#383838;}
+html.dark .tabbtn.active{background:#242424;}
+html.dark button.secondary{background:transparent;}
+html.dark button:disabled{background:#4a4a4a;}
+html.dark .initials-chip{background:#33260f;}
+html.dark .initials-chip label{color:#e0a458;}
+html.dark .initials-chip .hintTxt{color:#c9a96a;}
+.lb-top{position:relative;margin:-24px -24px 20px;}
+.lb-tabs .tabbtn{display:flex;align-items:center;gap:6px;background:none;border:0;border-bottom:3px solid transparent;border-radius:0;box-shadow:none;margin:0;padding:4px 12px 0;font:19px/1 'Bebas Neue',Impact,'Arial Narrow',sans-serif;letter-spacing:.6px;color:var(--lb-ink-2);cursor:pointer;}
+.lb-tabs .tabbtn:hover{background:none;color:var(--lb-ink);}
+.lb-tabs .tabbtn.active{background:none;color:var(--lb-ink);border-color:transparent;border-bottom-color:var(--lb-red);box-shadow:none;}
+.lb-tabs .tabbtn.has-alert,.lb-tabs .tabbtn.has-alert.active{color:#c0392b;box-shadow:none;}
+.lb-tabs .tab-alert{margin-left:0;font-family:Calibri,Carlito,'Segoe UI',sans-serif;}
+html.dark .lb-tabs .tabbtn,html.dark .lb-tabs .tabbtn:hover,html.dark .lb-tabs .tabbtn.active{background:none;}
+</style>
 </head>
 <body>
-<div class="wrap">
-  <h1>Opmaak façade lasschema's</h1>
-  <div class="sub">Splitst tabs van een Façadelasschema-Excel per kabellabel naar aparte Excel-bestanden, met bestandsnaam volgens het formaat <b>DW&lt;deelwijk&gt;-HH&lt;hh&gt;-K&lt;kabelnummer&gt;-&lt;eerste adres&gt;_&lt;datum&gt;_&lt;initialen&gt;</b>.</div>
-
-  <div class="tabbar">
+<div class="lb-top"><div class="lb-wrap">
+  <a class="lb-brand" href="index.html" title="Naar overzicht">Sorter</a>
+  <nav class="lb-tabs">
     <button class="tabbtn active" data-page="tool">Tool</button>
     <button class="tabbtn" data-page="meldingen">Meldingen<span class="tab-alert" id="meldingenAlert" style="display:none;">!</span></button>
     <button class="tabbtn" data-page="deelwijken">Deelwijken-laag</button>
     <button class="tabbtn" data-page="howto">How to</button>
-  </div>
+  </nav>
+  <div class="lb-meta"><button type="button" class="lb-btn lb-theme" data-theme-toggle title="Licht / donker" aria-label="Wissel tussen licht en donker thema"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><g class="i-sun"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></g><path class="i-moon" d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button></div>
+</div></div>
+<div class="wrap">
+  <div class="sub">Splitst tabs van een Façadelasschema-Excel per kabellabel naar aparte Excel-bestanden, met bestandsnaam volgens het formaat <b>DW&lt;deelwijk&gt;-HH&lt;hh&gt;-K&lt;kabelnummer&gt;-&lt;eerste adres&gt;_&lt;datum&gt;_&lt;initialen&gt;</b>.</div>
+
 
 <script>
 document.querySelectorAll('.tabbtn').forEach(btn => {

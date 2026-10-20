@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PDF Review Tool</title>
+<script src="assets/theme.js"></script>
+<link rel="stylesheet" href="assets/topbar.css">
 <!-- pdf.js v3 (UMD) — werkt als klassiek script, ook bij lokaal openen -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
@@ -118,7 +120,7 @@
   .thumb-imgwrap{position:relative;width:100%;min-height:90px;cursor:crosshair;user-select:none}
   .thumb-imgwrap canvas{display:block;max-width:100%;box-shadow:0 1px 4px rgba(0,0,0,.15)}
   .thumb-sel{position:absolute;display:none;border:2px solid var(--accent);
-    background:rgba(194,65,12,.22);pointer-events:none;box-sizing:border-box}
+    background:rgba(255,0,0,.18);pointer-events:none;box-sizing:border-box}
   .thumb-num{font-family:var(--mono);font-size:.68rem;color:var(--ink-soft)}
   .v-body{flex:1;display:flex;min-height:0}
   .canvas-wrap{flex:1;overflow:auto;background:#d8d6cd;padding:1.2rem;
@@ -154,15 +156,44 @@
   .loading.show{display:flex}
   @media(max-width:780px){.side{display:none}}
 </style>
+<link rel="icon" href="assets/favicon.ico" sizes="any">
+<link href="assets/fonts/fonts.css" rel="stylesheet">
+<style id="jacops-brand">
+/* JACOPS brandguide — soft restyle (kleur + typografie, geen layoutwijzigingen) */
+:root{
+  --ink:#3b3b3b;--ink-soft:#5f5f5e;--line:#e2e2e1;--line-strong:#c6c6c5;
+  --paper:#f6f6f6;--card:#ffffff;--accent:#ff0000;--accent-soft:#ffe5e5;
+  --sans:Calibri,Carlito,'Segoe UI',system-ui,-apple-system,Arial,sans-serif;
+  --display:'Bebas Neue','Bebas Neue Pro',Impact,'Arial Narrow',sans-serif;
+}
+.brand{align-items:center;gap:10px;}
+html.dark{--ink:#f2f2f2;--ink-soft:#b5b5b4;--line:#3b3b3b;--line-strong:#4f4f4f;--paper:#1a1a1a;--card:#242424;--accent:#ff3333;--accent-soft:#3a1414;--ok:#4cc38a;--ok-soft:#122c20;--err:#ff7070;--err-soft:#3a1a19;color-scheme:dark;}
+html.dark .drop:hover,html.dark .btn-ghost:hover,html.dark tr:hover td{background:#2a2a2a;}
+html.dark .search-input,html.dark .dropdown-toggle,html.dark .dropdown-panel,html.dark .btn-icon,html.dark .thumb,html.dark .notes li,html.dark .iconbtn,html.dark .note-row input,html.dark textarea{background:#1f1f1f;color:#f2f2f2;}
+html.dark .btn-icon:hover{background:#2e2e2e;}
+html.dark .btn-icon.active,html.dark .btn.active{background:#f2f2f2;color:#1a1a1a;border-color:#f2f2f2;}
+html.dark .swatch.active{box-shadow:0 0 0 1px #1a1a1a inset,0 0 0 1px var(--ink);}
+html.dark .banner.info{background:#1c2733;color:#a9c4e0;border-color:#2c3e52;}
+html.dark .banner.warn{border-color:#5a2a26;}
+html.dark .loading{background:rgba(26,26,26,.85);}
+.drop h3,.toolbar h2{font-weight:400;letter-spacing:.03em;font-size:1.45rem;}
+.drop:hover{background:#fff;}
+.btn-primary:hover{background:#d10000;}
+.loading{background:rgba(246,246,246,.85);}
+.lb-meta .stats{margin-right:6px;gap:1.2rem;}
+.lb-meta .stat b{color:var(--lb-ink);font-size:1.05rem;line-height:1.1;}
+.lb-meta .stat.err b{color:var(--lb-red);}
+.lb-meta .stat span{color:var(--lb-ink-3);opacity:1;}
+</style>
 </head>
 <body>
-<header>
-  <div class="brand"><h1>PDF Review</h1><span>review tool</span></div>
-  <div class="stats">
+<div class="lb-top"><div class="lb-wrap">
+  <a class="lb-brand" href="index.html" title="Naar overzicht">Review tool</a>
+  <div class="lb-meta"><div class="stats">
     <div class="stat"><b id="sTotal">0</b><span>loaded</span></div>
     <div class="stat err"><b id="sErr">0</b><span>with errors</span></div>
-  </div>
-</header>
+  </div><button type="button" class="lb-btn lb-theme" data-theme-toggle title="Licht / donker" aria-label="Wissel tussen licht en donker thema"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><g class="i-sun"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></g><path class="i-moon" d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button></div>
+</div></div>
 
 <main>
   <div class="card">

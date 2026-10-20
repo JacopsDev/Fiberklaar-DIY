@@ -4,6 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Kabelgroepering — netwerkelementen per kabel</title>
+<script src="assets/theme.js"></script>
+<link rel="stylesheet" href="assets/topbar.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -226,23 +228,41 @@ input[type=file]{display:none}
 }
 @media (prefers-reduced-motion: reduce){ *{transition:none !important} }
 </style>
+<link rel="icon" href="assets/favicon.ico" sizes="any">
+<link href="assets/fonts/fonts.css" rel="stylesheet">
+<style id="jacops-brand">
+/* JACOPS brandguide — soft restyle (kleur + typografie, geen layoutwijzigingen) */
+:root{
+  --paper:#f6f6f6;--panel-2:#f9f9f9;
+  --ink:#3b3b3b;--ink-2:#5f5f5e;--ink-3:#8f8f8e;
+  --line:#e2e2e1;--line-strong:#c6c6c5;
+  --accent:#ff0000;--accent-ink:#d10000;--accent-wash:#fff0f0;
+  --sans:Calibri,Carlito,'Segoe UI',system-ui,-apple-system,Arial,sans-serif;
+}
+body{background:var(--paper);}
+html.dark{--paper:#1a1a1a;--panel:#242424;--panel-2:#2a2a2a;--ink:#f2f2f2;--ink-2:#b5b5b4;--ink-3:#8c8c8b;--line:#3b3b3b;--line-strong:#4f4f4f;--accent:#ff3333;--accent-ink:#ff7070;--accent-wash:#3a1414;--shadow:0 1px 2px rgba(0,0,0,.3);color-scheme:dark;}
+html.dark .group.has-err{background:#2a1c1c;}
+html.dark .odf-err{background:#2e1c1c !important;}
+html.dark .odf-err:hover{background:#3a1f1f !important;}
+html.dark .odf-chip,html.dark .num.used,html.dark .tag.s{background:#383838;color:#d8d8d7;}
+html.dark .num.free{background:#1d3327;color:#6fd39c;}
+html.dark .num.dup,html.dark .odf-chip-bad{background:#3a1414;color:#ff7070;}
+html.dark .valid.warn2,html.dark .refwarn{background:#33260f;color:#e0c48a;border-color:#5a4520;}
+html.dark .valid.err,html.dark #err{background:#3a1f14;color:#f0a88a;border-color:#5a2e1e;}
+html.dark .valid.ok{background:#16291f;color:#8fd1ae;border-color:#24402f;}
+.lb-top{position:relative;margin:-28px -20px 22px;}
+</style>
 </head>
 <body>
+<div class="lb-top"><div class="lb-wrap">
+  <a class="lb-brand" href="index.html" title="Naar overzicht">Controle labeling</a>
+  <div class="lb-meta"><button type="button" class="lb-btn lb-theme" data-theme-toggle title="Licht / donker" aria-label="Wissel tussen licht en donker thema"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><g class="i-sun"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></g><path class="i-moon" d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button></div>
+</div></div>
 <div class="wrap">
 
   <header class="head">
-    <span class="glyph" aria-hidden="true">
-      <svg viewBox="0 0 38 38" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <rect x="1" y="1" width="36" height="36" rx="9" fill="#E0F3F5"/>
-        <circle cx="10" cy="19" r="3.1" fill="#0E8FA3"/>
-        <circle cx="28" cy="10" r="2.4" fill="#D9743A"/>
-        <circle cx="29" cy="19" r="2.4" fill="#8A5CE0"/>
-        <circle cx="28" cy="28" r="2.4" fill="#11899B"/>
-        <path d="M12.7 18.2 25.8 10.8M13 19h13M12.8 19.9 25.9 27.4" stroke="#0E8FA3" stroke-width="1.5" stroke-linecap="round"/>
-      </svg>
-    </span>
     <div>
-      <h1>Kabelgroepering</h1>
+      
       <p>Elke kabel valt onder zijn <span class="kbd">hoofdkabel</span> — de code die op <span class="kbd">00</span> eindigt; de <span class="kbd">01–04</span>-codes zijn de subkabels. Elk netwerkelement hangt via <span class="kbd">Parent_ID → ID</span> aan een kabel. Klik een hoofdkabel open om de subkabels en hun elementen te zien.</p>
     </div>
   </header>
