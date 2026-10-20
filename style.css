@@ -1,119 +1,147 @@
 /* ============================================================
-   Design tokens
+   Design tokens — JACOPS brandguide
+   Rood #ff0000 · Wit #ffffff · Grijs #c6c6c5 · Donkergrijs #3b3b3b
+   Titels: Bebas Neue · Tekst: Calibri
    ============================================================ */
 :root {
-  --ink:        #0f1b2b;   /* background */
-  --ink-2:      #16263b;   /* card surface */
-  --ink-3:      #1d3049;   /* card surface, hover */
-  --line:       #2a4160;   /* hairline borders */
-  --parchment:  #f2ece1;   /* primary text */
-  --steel:      #8fa3bd;   /* muted text */
-  --amber:      #e8a33d;   /* primary accent */
-  --teal:       #4fb3a9;   /* secondary accent */
+  --red:        #ff0000;   /* RAL 3028 pure red / Pantone 1795 */
+  --red-dark:   #d10000;   /* hover / small red text (contrast) */
+  --red-wash:   #fff0f0;
+  --white:      #ffffff;
+  --grey:       #c6c6c5;   /* CMYK 0-0-0-30 */
+  --grey-soft:  #ececeb;
+  --grey-bg:    #f6f6f6;
+  --dark:       #3b3b3b;   /* Pantone 447c / RAL 7021 */
+  --dark-soft:  #6b6b6a;
+  --bg:         #ffffff;
+  --surface:    #ffffff;
+  --bar-bg:     rgba(255,255,255,0.94);
+  --btn-bg:     #efefee;
 
-  --display: "Fraunces", "Iowan Old Style", Georgia, serif;
-  --body:    "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --mono:    "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --display: "Bebas Neue", "Bebas Neue Pro", Impact, "Arial Narrow", sans-serif;
+  --body:    Calibri, Carlito, "Segoe UI", -apple-system, Arial, sans-serif;
 
   --max-w: 1180px;
+  --band-h: 64px;
 }
 
-@media (prefers-color-scheme: light) {
-  /* Site is intentionally dark-themed regardless of system preference */
+/* Dark mode — toggled by assets/theme.js (html.dark) */
+html.dark {
+  --red-dark:   #ff7070;
+  --red-wash:   #3a1414;
+  --grey:       #4a4a4a;
+  --grey-soft:  #2e2e2e;
+  --dark:       #f2f2f2;
+  --dark-soft:  #b5b5b4;
+  --bg:         #1a1a1a;
+  --surface:    #242424;
+  --bar-bg:     rgba(26,26,26,0.94);
+  --btn-bg:     #2e2e2e;
+  color-scheme: dark;
 }
+
+.theme-btn {
+  position: fixed;
+  z-index: 21;
+  top: 1.05rem;
+  right: 1.8rem;
+  padding: 4px 10px;
+  font-family: var(--body);
+  font-size: 12px;
+  border: 1px solid var(--grey);
+  border-radius: 7px;
+  background: var(--btn-bg);
+  color: var(--dark-soft);
+  cursor: pointer;
+}
+.theme-btn:hover { color: var(--dark); }
 
 * { box-sizing: border-box; }
 
-html {
-  scroll-behavior: smooth;
-}
+html { scroll-behavior: smooth; }
 
 body {
   margin: 0;
-  background: var(--ink);
-  color: var(--parchment);
+  background: var(--bg);
+  color: var(--dark);
   font-family: var(--body);
-  font-size: 16px;
-  line-height: 1.55;
+  font-size: 17px;
+  line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   min-height: 100vh;
   position: relative;
   overflow-x: hidden;
-}
-
-/* Faint topographic-line texture across the whole page */
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 0;
-  opacity: 0.5;
-  background-image:
-    radial-gradient(circle at 18% 20%, rgba(232,163,61,0.06), transparent 40%),
-    radial-gradient(circle at 82% 78%, rgba(79,179,169,0.07), transparent 42%),
-    repeating-radial-gradient(circle at 50% 50%, transparent 0, transparent 68px, rgba(143,163,189,0.035) 69px, transparent 70px);
+  display: flex;
+  flex-direction: column;
 }
 
 a { color: inherit; }
 
 /* ============================================================
-   Fixed corner marks (logo top-left, mark bottom-right)
+   Fixed corner marks (logo top-left, J. mark bottom-right)
    ============================================================ */
 .corner-mark {
   position: fixed;
   z-index: 20;
   display: flex;
   align-items: center;
-  gap: 0.6rem;
-  color: var(--parchment);
+  gap: 0.9rem;
+  color: var(--dark);
   text-decoration: none;
 }
 
 .corner-mark--tl {
-  top: 1.6rem;
-  left: 1.8rem;
+  top: 0;
+  left: 0;
+  right: 0;
+  padding: 1.1rem 1.8rem;
+  background: var(--bar-bg);
+  backdrop-filter: blur(6px);
+  border-bottom: 1px solid var(--grey-soft);
+}
+
+.corner-mark--tl .logo-mark {
+  height: 26px;
+  width: auto;
 }
 
 .corner-mark--br {
-  bottom: 1.6rem;
+  bottom: calc(var(--band-h) + 1.2rem);
   right: 1.8rem;
-  color: var(--steel);
-}
-
-.logo-mark {
-  width: 34px;
-  height: 34px;
-  color: var(--parchment);
-  flex-shrink: 0;
-  transition: transform 0.6s ease;
+  width: 44px;
+  height: 44px;
+  justify-content: center;
+  background: var(--red);
+  box-shadow: 0 4px 14px rgba(0,0,0,0.12);
+  transition: background 0.2s ease, transform 0.2s ease;
 }
 
 .corner-mark--br .logo-mark {
-  width: 26px;
-  height: 26px;
-  color: var(--steel);
-  opacity: 0.8;
+  width: 24px;
+  height: auto;
 }
 
-.corner-mark:hover .logo-mark {
-  transform: rotate(35deg);
+.corner-mark--br .wordmark {
+  position: absolute;
+  width: 1px; height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+
+.corner-mark--br:hover {
+  background: var(--red-dark);
+  transform: translateY(-2px);
 }
 
 .wordmark {
   font-family: var(--display);
-  font-weight: 600;
-  font-size: 1.05rem;
-  letter-spacing: 0.02em;
+  font-size: 1.15rem;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  padding-left: 0.9rem;
+  border-left: 1px solid var(--grey);
+  color: var(--dark);
   white-space: nowrap;
-}
-
-.corner-mark--br .wordmark {
-  font-family: var(--mono);
-  font-size: 0.7rem;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--steel);
 }
 
 /* ============================================================
@@ -122,77 +150,73 @@ a { color: inherit; }
 .shell {
   position: relative;
   z-index: 1;
+  width: 100%;
   max-width: var(--max-w);
   margin: 0 auto;
-  padding: 8rem 2rem 7rem;
+  padding: 3rem 2rem 6rem;
+  flex: 1;
 }
 
 /* ============================================================
    Hero
    ============================================================ */
 .hero {
-  margin-bottom: 4.5rem;
+  margin-bottom: 3.2rem;
 }
 
 .hero .eyebrow {
-  font-family: var(--mono);
-  font-size: 0.72rem;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-  color: var(--amber);
-  display: inline-flex;
-  align-items: center;
-  gap: 0.6rem;
-  margin-bottom: 1.4rem;
-}
-
-.hero .eyebrow::before {
-  content: "";
-  width: 22px;
-  height: 1px;
-  background: var(--amber);
   display: inline-block;
+  font-family: var(--display);
+  font-size: 1.05rem;
+  letter-spacing: 0.06em;
+  line-height: 1;
+  color: var(--white);
+  background: var(--red);
+  padding: 0.35rem 0.55rem 0.25rem;
+  margin: 0 0 1.4rem;
 }
 
 .hero h1 {
   font-family: var(--display);
-  font-weight: 600;
-  font-size: clamp(2.6rem, 6vw, 4.6rem);
-  line-height: 1.02;
-  margin: 0 0 1.4rem;
-  letter-spacing: -0.01em;
+  font-weight: 400;
+  font-size: clamp(3.2rem, 7vw, 5.6rem);
+  line-height: 0.95;
+  margin: 0 0 1.2rem;
+  letter-spacing: 0.01em;
+  color: var(--dark);
 }
 
 .hero h1 em {
-  font-style: italic;
-  color: var(--amber);
+  font-style: normal;
+  color: var(--red);
 }
 
-.hero p {
-  font-size: 1.08rem;
-  color: var(--steel);
+.hero-copy {
+  font-size: 1.1rem;
+  font-weight: 300;
+  color: var(--dark-soft);
   max-width: 46ch;
   margin: 0;
 }
 
 /* ============================================================
-   Guide grid — quadrants of a compass
+   Tool grid
    ============================================================ */
 .grid-label {
-  font-family: var(--mono);
-  font-size: 0.7rem;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--steel);
+  font-family: var(--display);
+  font-size: 1.5rem;
+  letter-spacing: 0.03em;
+  line-height: 1;
+  color: var(--red);
   margin: 0 0 1.2rem;
-  padding-bottom: 0.9rem;
-  border-bottom: 1px solid var(--line);
+  padding-bottom: 0.8rem;
+  border-bottom: 2px solid var(--red);
 }
 
 .guide-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1.25rem;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
 }
 
 .guide-card {
@@ -200,103 +224,107 @@ a { color: inherit; }
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  gap: 2.4rem;
-  min-height: 260px;
-  padding: 2.1rem 2.1rem 1.8rem;
-  background: var(--ink-2);
-  border: 1px solid var(--line);
-  border-radius: 4px;
+  gap: 1.6rem;
+  min-height: 240px;
+  padding: 1.3rem 1.3rem 1.2rem;
+  background: var(--surface);
+  border: 1px solid var(--grey);
+  border-radius: 0;
   text-decoration: none;
-  color: var(--parchment);
+  color: var(--dark);
   overflow: hidden;
-  transition: background 0.35s ease, border-color 0.35s ease, transform 0.35s ease;
+  transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-.guide-card::after {
+/* red bar that grows in on hover */
+.guide-card::before {
   content: "";
   position: absolute;
-  top: -40%;
-  right: -20%;
-  width: 60%;
-  height: 180%;
-  background: radial-gradient(circle, rgba(232,163,61,0.10), transparent 60%);
-  opacity: 0;
-  transition: opacity 0.4s ease;
-  pointer-events: none;
+  left: 0; top: 0; bottom: 0;
+  width: 4px;
+  background: var(--red);
+  transform: scaleY(0);
+  transform-origin: top;
+  transition: transform 0.25s ease;
 }
 
 .guide-card:hover {
-  background: var(--ink-3);
-  border-color: var(--amber);
+  border-color: var(--red);
   transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(59,59,59,0.10);
 }
 
-.guide-card:hover::after {
-  opacity: 1;
-}
+.guide-card:hover::before { transform: scaleY(1); }
 
 .guide-card:focus-visible {
-  outline: 2px solid var(--amber);
-  outline-offset: 3px;
+  outline: 3px solid var(--red);
+  outline-offset: 2px;
 }
 
 .card-top {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 1rem;
+  gap: 0.8rem;
 }
 
 .card-bearing {
-  font-family: var(--mono);
-  font-size: 0.72rem;
-  letter-spacing: 0.1em;
-  color: var(--amber);
-}
-
-.card-bearing span {
-  color: var(--steel);
-  display: block;
-  font-size: 0.66rem;
-  letter-spacing: 0.16em;
-  margin-top: 0.25rem;
+  font-family: var(--display);
+  font-size: 1rem;
+  letter-spacing: 0.06em;
+  line-height: 1;
+  color: var(--white);
+  background: var(--red);
+  padding: 0.3rem 0.45rem 0.2rem;
 }
 
 .card-index {
-  font-family: var(--mono);
-  font-size: 0.72rem;
-  color: var(--steel);
-  opacity: 0.8;
+  font-family: var(--display);
+  font-size: 1rem;
+  letter-spacing: 0.06em;
+  color: var(--grey);
+}
+
+.card-meta {
+  margin: 0 0 0.3rem;
+  font-family: var(--body);
+  font-weight: 700;
+  color: var(--dark-soft);
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .card-title {
   font-family: var(--display);
-  font-size: 1.7rem;
-  font-weight: 600;
-  margin: 0 0 0.6rem;
-  letter-spacing: -0.01em;
+  font-size: 2.1rem;
+  font-weight: 400;
+  line-height: 1;
+  margin: 0 0 0.5rem;
+  letter-spacing: 0.02em;
+  color: var(--dark);
 }
 
 .card-desc {
-  color: var(--steel);
-  font-size: 0.96rem;
+  color: var(--dark-soft);
+  font-size: 0.98rem;
+  font-weight: 300;
   max-width: 34ch;
   margin: 0;
 }
 
 .card-cta {
-  font-family: var(--mono);
-  font-size: 0.72rem;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--teal);
+  font-family: var(--display);
+  font-size: 1.1rem;
+  letter-spacing: 0.05em;
+  color: var(--red);
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.45rem;
 }
 
 .card-cta .arrow {
-  transition: transform 0.3s ease;
+  transition: transform 0.2s ease;
 }
 
 .guide-card:hover .card-cta .arrow {
@@ -304,24 +332,32 @@ a { color: inherit; }
 }
 
 /* ============================================================
-   Footer
+   Footer — red brand band with J. mark
    ============================================================ */
 .site-footer {
   position: relative;
   z-index: 1;
-  border-top: 1px solid var(--line);
-  padding: 2.2rem 2rem 6rem;
-  max-width: var(--max-w);
-  margin: 0 auto;
+  width: 100%;
+  min-height: var(--band-h);
+  padding: 0 1.8rem;
+  background: var(--red);
+  color: var(--white);
   display: flex;
   justify-content: space-between;
   align-items: center;
   flex-wrap: wrap;
   gap: 1rem;
-  font-family: var(--mono);
-  font-size: 0.72rem;
+  font-family: var(--display);
+  font-size: 1.15rem;
   letter-spacing: 0.05em;
-  color: var(--steel);
+}
+
+.site-footer::after {
+  content: "";
+  width: 30px;
+  height: 25px;
+  background: url("jacops-j-white.svg") no-repeat center / contain;
+  order: 3;
 }
 
 /* ============================================================
@@ -330,80 +366,92 @@ a { color: inherit; }
 .page-shell {
   position: relative;
   z-index: 1;
+  width: 100%;
   max-width: 760px;
   margin: 0 auto;
   padding: 8.5rem 2rem 7rem;
+  flex: 1;
 }
 
 .back-link {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  font-family: var(--mono);
-  font-size: 0.72rem;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--steel);
+  font-family: var(--display);
+  font-size: 1.1rem;
+  letter-spacing: 0.05em;
+  color: var(--dark-soft);
   text-decoration: none;
   margin-bottom: 2.6rem;
-  transition: color 0.25s ease;
+  transition: color 0.2s ease;
 }
 
-.back-link:hover { color: var(--amber); }
+.back-link:hover { color: var(--red); }
 
 .page-shell .card-bearing {
+  display: inline-block;
   margin-bottom: 1rem;
 }
 
 .page-shell h1 {
   font-family: var(--display);
-  font-size: clamp(2.1rem, 5vw, 3.2rem);
-  font-weight: 600;
+  font-size: clamp(2.6rem, 6vw, 4rem);
+  font-weight: 400;
+  line-height: 1;
   margin: 0 0 1.4rem;
-  letter-spacing: -0.01em;
+  letter-spacing: 0.01em;
+  color: var(--red);
 }
 
 .page-shell .lede {
-  font-size: 1.08rem;
-  color: var(--steel);
+  font-size: 1.12rem;
+  font-weight: 300;
+  color: var(--dark-soft);
   max-width: 56ch;
   margin: 0 0 2.6rem;
 }
 
-.page-shell section {
-  margin-bottom: 2.4rem;
-}
+.page-shell section { margin-bottom: 2.4rem; }
 
 .page-shell h2 {
   font-family: var(--display);
-  font-size: 1.3rem;
-  font-weight: 600;
+  font-size: 1.8rem;
+  font-weight: 400;
+  letter-spacing: 0.02em;
   margin: 0 0 0.8rem;
+  color: var(--red);
 }
 
 .page-shell p {
-  color: #d6cfc2;
+  color: var(--dark);
   margin: 0 0 1rem;
 }
 
 .page-shell ul {
-  color: #d6cfc2;
+  color: var(--dark);
   padding-left: 1.2rem;
 }
 
 .page-shell li { margin-bottom: 0.5rem; }
+.page-shell li::marker { color: var(--red); }
 
 /* ============================================================
    Responsive
    ============================================================ */
+@media (max-width: 1000px) {
+  .guide-grid { grid-template-columns: 1fr 1fr; }
+}
+
 @media (max-width: 720px) {
-  .shell { padding: 7rem 1.3rem 5rem; }
+  .shell { padding: 2rem 16px 5rem; }
   .guide-grid { grid-template-columns: 1fr; }
-  .corner-mark--tl { top: 1.1rem; left: 1.2rem; }
-  .corner-mark--br { bottom: 1.1rem; right: 1.2rem; }
-  .wordmark { font-size: 0.95rem; }
-  .site-footer { padding: 1.8rem 1.3rem 5rem; }
-  .page-shell { padding: 7rem 1.3rem 5rem; }
+  .corner-mark--tl { padding: 0.9rem 16px; }
+  .corner-mark--tl .logo-mark { height: 20px; }
+  .wordmark { font-size: 1rem; }
+  .corner-mark--br { right: 16px; }
+  .theme-btn { top: 0.8rem; right: 16px; }
+  .site-footer { padding: 0 16px; }
+  .page-shell { padding: 6.5rem 16px 5rem; }
 }
 
 @media (prefers-reduced-motion: reduce) {
