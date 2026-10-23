@@ -48,7 +48,8 @@ git push -u origin main
 - **Card titles / links on the landing page** → edit the four `<a class="guide-card">`
   blocks in `index.html`.
 - **Adding a new pages** → add this block and fill in the relevant html reference or webpage
-      <a class="guide-card" href="HTML OR WEBPAGE">
+```
+    <a class="guide-card" href="HTML OR WEBPAGE">
         <div class="card-top">
           <div class="card-bearing">SHORTNAME</div>
           <div class="card-index">INDEX</div>
@@ -60,6 +61,7 @@ git push -u origin main
         </div>
         <span class="card-cta">Open tool <span class="arrow">→</span></span>
       </a>
+```
 - **Each guide's content** → edit the `<section>` blocks in the matching
   `guide-*.html` file (Overview / Steps / Notes — replace freely, this is
   just a starting structure).
