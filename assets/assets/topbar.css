@@ -1,0 +1,111 @@
+/* Top bar shared by every page of the suite — same design as Lightbrowser:
+   3px red inset line, red Bebas brand, Bebas tabs with a red underline on the
+   active one, controls on the right. Classes are lb-* so they never collide
+   with a tool's own header/nav/.btn styles. Dark mode: html.dark (theme.js). */
+.lb-top {
+  --lb-surface: #fff;
+  --lb-line: #e0e0e0;
+  --lb-ink: #3b3b3b;
+  --lb-ink-2: #5e5e5e;
+  --lb-ink-3: #8c8c8c;
+  --lb-red: #ff0000;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  background: var(--lb-surface);
+  border-bottom: 1px solid var(--lb-line);
+  box-shadow: inset 0 3px 0 var(--lb-red);
+  font-family: Calibri, Carlito, "Segoe UI", system-ui, sans-serif;
+}
+html.dark .lb-top {
+  --lb-surface: #202020;
+  --lb-line: #3b3b3b;
+  --lb-ink: #f0f0f0;
+  --lb-ink-2: #c6c6c5;
+  --lb-ink-3: #8f8f8f;
+  --lb-red: #ff2a2a;
+}
+.lb-top, .lb-top * { box-sizing: border-box; }
+
+.lb-wrap {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 6px 20px 0;
+  min-height: 58px;
+  display: flex;
+  gap: 24px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.lb-top--full .lb-wrap { max-width: none; }
+
+.lb-brand {
+  font: 28px/1 "Bebas Neue", Impact, "Arial Narrow", sans-serif;
+  color: var(--lb-red);
+  letter-spacing: .5px;
+  padding-top: 3px;
+  margin: 0;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.lb-brand:hover { color: var(--lb-red); }
+
+.lb-tabs {
+  display: flex;
+  gap: 4px;
+  align-self: stretch;
+  flex-wrap: wrap;
+}
+.lb-tabs a {
+  display: flex;
+  align-items: center;
+  padding: 4px 12px 0;
+  color: var(--lb-ink-2);
+  font: 19px/1 "Bebas Neue", Impact, "Arial Narrow", sans-serif;
+  letter-spacing: .6px;
+  text-decoration: none;
+  border-bottom: 3px solid transparent;
+  white-space: nowrap;
+}
+.lb-tabs a:hover { color: var(--lb-ink); }
+.lb-tabs a.on { color: var(--lb-ink); border-bottom-color: var(--lb-red); }
+
+.lb-meta {
+  margin-left: auto;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  color: var(--lb-ink-3);
+  font-size: 12px;
+}
+
+.lb-btn {
+  font-family: inherit;
+  background: var(--lb-surface);
+  border: 1px solid var(--lb-line);
+  border-radius: 4px;
+  padding: 6px 12px;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 13px;
+  line-height: 1.2;
+  color: var(--lb-ink);
+}
+.lb-btn:hover { border-color: var(--lb-ink-3); background: var(--lb-surface); }
+
+.lb-theme {
+  width: 34px;
+  height: 31px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.lb-theme .i-sun { display: none; }
+html.dark .lb-theme .i-sun { display: inline; }
+html.dark .lb-theme .i-moon { display: none; }
+
+@media (max-width: 720px) {
+  .lb-wrap { gap: 10px 16px; padding: 6px 16px 0; }
+  .lb-tabs { order: 3; width: 100%; overflow-x: auto; flex-wrap: nowrap; }
+}

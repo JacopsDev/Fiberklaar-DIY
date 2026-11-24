@@ -1,0 +1,12 @@
+{
+    "common.upload": "फ़ाइल अपलोड करें",
+    "common.download": "डाउनलोड करें",
+    "common.reset": "रीसेट करें",
+    "common.validate": "सत्यापित करें",
+    "common.back": "वापस",
+    "common.search": "खोजें",
+    "common.results": "परिणाम",
+    "common.error": "एक त्रुटि हुई",
+    "common.success": "सफलतापूर्वक पूरा हुआ",
+    "common.processed": "{count} रिकॉर्ड संसाधित हुए"
+}

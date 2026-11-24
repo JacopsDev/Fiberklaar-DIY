@@ -1,0 +1,12 @@
+{
+    "common.upload": "Bestand uploaden",
+    "common.download": "Downloaden",
+    "common.reset": "Resetten",
+    "common.validate": "Valideren",
+    "common.back": "Terug",
+    "common.search": "Zoeken",
+    "common.results": "Resultaten",
+    "common.error": "Er is een fout opgetreden",
+    "common.success": "Succesvol voltooid",
+    "common.processed": "{count} records verwerkt"
+}
